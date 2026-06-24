@@ -1,0 +1,1036 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #0B0B0C;
+  --foreground: #F8FAFC;
+  --card: #16181D;
+  --card-foreground: #F8FAFC;
+  --popover: #16181D;
+  --popover-foreground: #F8FAFC;
+  --primary: #030213;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: #252933;
+  --input: #252933;
+  --input-background: #0F1115;
+  --switch-background: #343946;
+  --financeos-bg-primary: #0B0B0C;
+  --financeos-bg-secondary: #121418;
+  --financeos-surface: #16181D;
+  --financeos-surface-elevated: #1C1F26;
+  --financeos-surface-hover: #252933;
+  --financeos-border: #252933;
+  --financeos-border-strong: #334155;
+  --financeos-text-primary: #F8FAFC;
+  --financeos-text-secondary: #CBD5E1;
+  --financeos-text-muted: #94A3B8;
+  --financeos-text-subtle: #64748B;
+  --financeos-input-bg: #0F1115;
+  --financeos-input-border: #252933;
+  --financeos-icon-container: #1C1F26;
+  --financeos-icon-container-hover: #252933;
+  --financeos-overlay: rgb(0 0 0 / 0.65);
+  --financeos-warning-bg: rgb(245 158 11 / 0.10);
+  --financeos-warning-border: rgb(252 211 77 / 0.20);
+  --financeos-warning-title: #FEF3C7;
+  --financeos-warning-text: #FDE68A;
+  --financeos-warning-icon: #FBBF24;
+  --financeos-success-bg: rgb(0 214 143 / 0.10);
+  --financeos-success-border: rgb(0 214 143 / 0.24);
+  --financeos-success-title: #CCFBF1;
+  --financeos-success-text: #99F6E4;
+  --financeos-success-icon: #00D68F;
+  --financeos-error-bg: rgb(239 68 68 / 0.10);
+  --financeos-error-border: rgb(248 113 113 / 0.24);
+  --financeos-error-title: #FEE2E2;
+  --financeos-error-text: #FECACA;
+  --financeos-error-icon: #F87171;
+  --financeos-info-bg: rgb(139 92 246 / 0.12);
+  --financeos-info-border: rgb(139 92 246 / 0.28);
+  --financeos-info-title: #EDE9FE;
+  --financeos-info-text: #DDD6FE;
+  --financeos-info-icon: #A78BFA;
+  --bg: var(--financeos-bg-primary);
+  --bg-secondary: var(--financeos-bg-secondary);
+  --surface: var(--financeos-surface);
+  --surface-elevated: var(--financeos-surface-elevated);
+  --surface-hover: var(--financeos-surface-hover);
+  --border: var(--financeos-border);
+  --text-primary: var(--financeos-text-primary);
+  --text-secondary: var(--financeos-text-secondary);
+  --text-muted: var(--financeos-text-muted);
+  --input-bg: var(--financeos-input-bg);
+  --financeos-shadow-card: 0 18px 44px rgb(0 0 0 / 0.22);
+  --financeos-shadow-card-hover: 0 22px 54px rgb(0 0 0 / 0.28);
+  --chart-grid: rgb(148 163 184 / 0.12);
+  --chart-axis-text: #A8B0BD;
+  --chart-muted-text: #8F98A8;
+  --chart-tooltip-bg: rgb(22 24 29 / 0.98);
+  --chart-tooltip-border: #252933;
+  --chart-tooltip-shadow: 0 18px 44px rgb(0 0 0 / 0.34);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #030213;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.financeos-theme-light {
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --secondary: #EEF2F7;
+  --secondary-foreground: #0F172A;
+  --muted: #EEF2F7;
+  --muted-foreground: #475569;
+  --accent: #E8EDF5;
+  --accent-foreground: #0F172A;
+  --border: #E2E8F0;
+  --input: #CBD5E1;
+  --input-background: #FFFFFF;
+  --switch-background: #CBD5E1;
+  --financeos-bg-primary: #F8FAFC;
+  --financeos-bg-secondary: #EEF2F7;
+  --financeos-surface: #FFFFFF;
+  --financeos-surface-elevated: #FAFBFD;
+  --financeos-surface-hover: #F1F5F9;
+  --financeos-border: #E2E8F0;
+  --financeos-border-strong: #CBD5E1;
+  --financeos-text-primary: #0F172A;
+  --financeos-text-secondary: #475569;
+  --financeos-text-muted: #64748B;
+  --financeos-text-subtle: #94A3B8;
+  --financeos-input-bg: #FFFFFF;
+  --financeos-input-border: #CBD5E1;
+  --financeos-icon-container: #EEF2F7;
+  --financeos-icon-container-hover: #E2E8F0;
+  --financeos-overlay: rgb(15 23 42 / 0.35);
+  --financeos-warning-bg: #FFFBEB;
+  --financeos-warning-border: #F59E0B;
+  --financeos-warning-title: #92400E;
+  --financeos-warning-text: #78350F;
+  --financeos-warning-icon: #D97706;
+  --financeos-success-bg: #ECFDF5;
+  --financeos-success-border: #00D68F;
+  --financeos-success-title: #065F46;
+  --financeos-success-text: #064E3B;
+  --financeos-success-icon: #00C26E;
+  --financeos-error-bg: #FEF2F2;
+  --financeos-error-border: #EF4444;
+  --financeos-error-title: #991B1B;
+  --financeos-error-text: #7F1D1D;
+  --financeos-error-icon: #DC2626;
+  --financeos-info-bg: #F5F3FF;
+  --financeos-info-border: #8B5CF6;
+  --financeos-info-title: #5B21B6;
+  --financeos-info-text: #4C1D95;
+  --financeos-info-icon: #7C3AED;
+  --financeos-shadow-card: 0 18px 44px rgb(15 23 42 / 0.08);
+  --financeos-shadow-card-hover: 0 22px 54px rgb(15 23 42 / 0.12);
+  --chart-grid: rgb(100 116 139 / 0.18);
+  --chart-axis-text: #475569;
+  --chart-muted-text: #64748B;
+  --chart-tooltip-bg: rgb(255 255 255 / 0.98);
+  --chart-tooltip-border: #E2E8F0;
+  --chart-tooltip-shadow: 0 18px 44px rgb(15 23 42 / 0.14);
+  --bg: var(--financeos-bg-primary);
+  --bg-secondary: var(--financeos-bg-secondary);
+  --surface: var(--financeos-surface);
+  --surface-elevated: var(--financeos-surface-elevated);
+  --surface-hover: var(--financeos-surface-hover);
+  --border: var(--financeos-border);
+  --text-primary: var(--financeos-text-primary);
+  --text-secondary: var(--financeos-text-secondary);
+  --text-muted: var(--financeos-text-muted);
+  --input-bg: var(--financeos-input-bg);
+}
+
+@layer components {
+  .financeos-premium {
+    color-scheme: dark;
+    min-height: 100vh;
+    background: linear-gradient(to bottom, var(--financeos-bg-primary) 0, var(--financeos-bg-primary) 18rem, var(--financeos-bg-secondary) 18rem, var(--financeos-bg-secondary) 100%);
+    color: var(--financeos-text-primary);
+  }
+
+  .financeos-premium .text-slate-950,
+  .financeos-premium .text-slate-900,
+  .financeos-premium .text-slate-800,
+  .financeos-premium .text-slate-700 {
+    color: rgb(248 250 252) !important;
+  }
+
+  .financeos-premium .text-slate-600,
+  .financeos-premium .text-slate-500 {
+    color: rgb(203 213 225) !important;
+  }
+
+  .financeos-premium .text-slate-400 {
+    color: rgb(148 163 184) !important;
+  }
+
+  .financeos-premium .bg-white,
+  .financeos-premium .bg-slate-50,
+  .financeos-premium .bg-slate-100 {
+    background-color: #1a1d23 !important;
+  }
+
+  .financeos-premium .bg-slate-200 {
+    background-color: #252933 !important;
+  }
+
+  .financeos-premium .border-slate-100,
+  .financeos-premium .border-slate-200,
+  .financeos-premium .border-slate-300 {
+    border-color: rgb(255 255 255 / 0.1) !important;
+  }
+
+  .financeos-premium select,
+  .financeos-premium textarea {
+    min-height: 2.5rem;
+    border-radius: 0.875rem;
+    border: 1px solid var(--financeos-border);
+    background-color: var(--input-background);
+    color: var(--financeos-text-primary);
+  }
+
+  .financeos-premium textarea::placeholder,
+  .financeos-premium input::placeholder {
+    color: rgb(100 116 139);
+  }
+
+  .financeos-premium option {
+    background-color: var(--financeos-surface);
+    color: var(--financeos-text-primary);
+  }
+
+  .financeos-premium table {
+    color: rgb(226 232 240);
+  }
+
+  .financeos-premium thead tr,
+  .financeos-premium tr.hover\:bg-slate-50:hover {
+    background-color: rgb(255 255 255 / 0.06) !important;
+  }
+
+  .financeos-premium tbody tr {
+    border-color: rgb(255 255 255 / 0.08) !important;
+  }
+
+  .financeos-premium .shadow-sm {
+    box-shadow: var(--financeos-shadow-card) !important;
+  }
+
+  .financeos-premium [data-slot="card"] {
+    position: relative;
+    border-color: var(--financeos-border);
+    background-color: var(--financeos-surface);
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  }
+
+  .financeos-premium [data-slot="card"]:hover {
+    transform: translateY(-3px);
+    border-color: var(--financeos-border-strong);
+    box-shadow: var(--financeos-shadow-card-hover);
+  }
+
+  .financeos-premium [data-slot="button"],
+  .financeos-premium button:not([data-slot]) {
+    border-color: #252933;
+    box-shadow: 0 10px 26px rgb(0 0 0 / 0.18);
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease, background-color 200ms ease, color 200ms ease;
+  }
+
+  .financeos-premium button:not([data-slot]) {
+    border-radius: 0.875rem;
+  }
+
+  .financeos-premium [data-slot="button"]:hover,
+  .financeos-premium button:not([data-slot]):hover {
+    transform: translateY(-2px);
+    border-color: #3a4050 !important;
+    box-shadow: 0 16px 34px rgb(0 0 0 / 0.26);
+  }
+
+  .financeos-premium [data-slot="button"]:active,
+  .financeos-premium button:not([data-slot]):active {
+    transform: translateY(0) scale(0.99);
+  }
+
+  .financeos-premium [data-slot="button"]:focus-visible,
+  .financeos-premium button:not([data-slot]):focus-visible {
+    outline: none;
+    border-color: rgb(148 163 184 / 0.7) !important;
+    box-shadow: 0 0 0 3px rgb(148 163 184 / 0.18), 0 16px 34px rgb(0 0 0 / 0.28);
+  }
+
+  .financeos-premium [data-slot="button"].bg-blue-600,
+  .financeos-premium [data-slot="button"].hover\:bg-blue-700,
+  .financeos-premium button.bg-blue-600 {
+    background-image: linear-gradient(135deg, #3B82F6, #2563EB) !important;
+    background-color: transparent !important;
+    border-color: rgb(59 130 246 / 0.3) !important;
+    color: white !important;
+  }
+
+  .financeos-premium [data-slot="button"].bg-red-600,
+  .financeos-premium [data-slot="button"].hover\:bg-red-700,
+  .financeos-premium button.bg-red-600 {
+    background-image: linear-gradient(135deg, #EF4444, #DC2626) !important;
+    background-color: transparent !important;
+    border-color: rgb(251 113 133 / 0.35) !important;
+    color: white !important;
+  }
+
+  .financeos-premium .recharts-cartesian-grid line {
+    stroke: var(--chart-grid);
+  }
+
+  .financeos-premium .recharts-text,
+  .financeos-premium .recharts-legend-item-text {
+    fill: var(--chart-axis-text) !important;
+    color: var(--chart-axis-text) !important;
+  }
+
+  .financeos-premium .recharts-tooltip-wrapper {
+    filter: drop-shadow(0 18px 40px rgb(0 0 0 / 0.35));
+  }
+
+  .financeos-premium .recharts-surface {
+    overflow: visible;
+  }
+
+  .financeos-control-card {
+    border-color: var(--financeos-border) !important;
+    background: linear-gradient(180deg, var(--financeos-surface-elevated), var(--financeos-surface)) !important;
+    color: var(--financeos-text-primary);
+  }
+
+  .financeos-field,
+  .financeos-select {
+    border-color: var(--financeos-border) !important;
+    background-color: var(--input-background) !important;
+    color: var(--financeos-text-primary) !important;
+  }
+
+  .financeos-field::placeholder {
+    color: var(--financeos-text-subtle) !important;
+  }
+
+  .financeos-muted-panel {
+    border-color: var(--financeos-border-strong) !important;
+    background-color: color-mix(in srgb, var(--financeos-surface-elevated) 62%, transparent) !important;
+    color: var(--financeos-text-muted) !important;
+  }
+
+  .financeos-settings-icon {
+    border: 1px solid color-mix(in srgb, var(--financeos-border) 72%, transparent);
+    background: var(--financeos-icon-container);
+    color: #8B5CF6;
+  }
+
+  .financeos-payment-card,
+  .financeos-timezone-trigger,
+  .financeos-timezone-popover {
+    border-color: var(--financeos-border) !important;
+    background-color: var(--financeos-surface) !important;
+    color: var(--financeos-text-primary) !important;
+    box-shadow: var(--financeos-shadow-card) !important;
+  }
+
+  .financeos-payment-card:hover,
+  .financeos-timezone-trigger:hover {
+    border-color: var(--financeos-border-strong) !important;
+    background-color: var(--financeos-surface-hover) !important;
+  }
+
+  .financeos-theme-light .financeos-premium {
+    --background: #F8FAFC;
+    --foreground: #0F172A;
+    --card: #FFFFFF;
+    --card-foreground: #0F172A;
+    --popover: #FFFFFF;
+    --popover-foreground: #0F172A;
+    --secondary: #EEF2F7;
+    --secondary-foreground: #0F172A;
+    --muted: #EEF2F7;
+    --muted-foreground: #475569;
+    --accent: #E8EDF5;
+    --accent-foreground: #0F172A;
+    --border: #E2E8F0;
+    --input: #E2E8F0;
+    --input-background: #FAFBFD;
+    --switch-background: #CBD5E1;
+    --financeos-bg-primary: #F8FAFC;
+    --financeos-bg-secondary: #EEF2F7;
+    --financeos-surface: #FFFFFF;
+    --financeos-surface-elevated: #FAFBFD;
+    --financeos-surface-hover: #F1F5F9;
+    --financeos-border: #E2E8F0;
+    --financeos-border-strong: #CBD5E1;
+    --financeos-text-primary: #0F172A;
+    --financeos-text-secondary: #475569;
+    --financeos-text-muted: #64748B;
+    --financeos-text-subtle: #94A3B8;
+    --financeos-shadow-card: 0 18px 44px rgb(15 23 42 / 0.08);
+    --financeos-shadow-card-hover: 0 22px 54px rgb(15 23 42 / 0.12);
+    --chart-grid: rgb(100 116 139 / 0.18);
+    --chart-axis-text: #475569;
+    --chart-muted-text: #64748B;
+    --chart-tooltip-bg: rgb(255 255 255 / 0.98);
+    --chart-tooltip-border: #E2E8F0;
+    --chart-tooltip-shadow: 0 18px 44px rgb(15 23 42 / 0.14);
+    color-scheme: light;
+  }
+
+  .financeos-theme-light .financeos-premium .text-slate-950,
+  .financeos-theme-light .financeos-premium .text-slate-900,
+  .financeos-theme-light .financeos-premium .text-slate-800,
+  .financeos-theme-light .financeos-premium .text-slate-700 {
+    color: var(--financeos-text-primary) !important;
+  }
+
+  .financeos-theme-light .financeos-premium .text-slate-600,
+  .financeos-theme-light .financeos-premium .text-slate-500,
+  .financeos-theme-light .financeos-premium .text-slate-400 {
+    color: var(--financeos-text-secondary) !important;
+  }
+
+  .financeos-theme-light .financeos-premium .bg-white,
+  .financeos-theme-light .financeos-premium .bg-slate-50,
+  .financeos-theme-light .financeos-premium .bg-slate-100 {
+    background-color: var(--financeos-surface) !important;
+  }
+
+  .financeos-theme-light .financeos-premium .border-slate-100,
+  .financeos-theme-light .financeos-premium .border-slate-200,
+  .financeos-theme-light .financeos-premium .border-slate-300 {
+    border-color: var(--financeos-border) !important;
+  }
+
+  .financeos-theme-light .financeos-premium [data-slot="button"].bg-blue-600,
+  .financeos-theme-light .financeos-premium button.bg-blue-600 {
+    color: #FFFFFF !important;
+  }
+
+  .financeos-theme-light .financeos-premium .financeos-soft-danger {
+    border-color: rgb(248 113 113 / 0.28) !important;
+    background-color: rgb(254 242 242 / 0.9) !important;
+    color: #DC2626 !important;
+  }
+
+  .financeos-alert-banner {
+    border-radius: 1.25rem;
+    border: 1px solid var(--financeos-border);
+    background: var(--financeos-surface-elevated);
+    color: var(--financeos-text-secondary);
+  }
+
+  .financeos-alert-warning {
+    border-color: var(--financeos-warning-border);
+    background: var(--financeos-warning-bg);
+    color: var(--financeos-warning-text);
+  }
+
+  .financeos-alert-warning-title {
+    color: var(--financeos-warning-title);
+  }
+
+  .financeos-alert-warning-text {
+    color: var(--financeos-warning-text);
+  }
+
+  .financeos-alert-warning-icon {
+    color: var(--financeos-warning-icon);
+  }
+
+  .financeos-alert-warning > svg,
+  .financeos-alert-warning [data-slot="alert-icon"] {
+    color: var(--financeos-warning-icon);
+  }
+
+  .financeos-alert-warning [data-slot="alert-title"] {
+    color: var(--financeos-warning-title);
+  }
+
+  .financeos-alert-warning [data-slot="alert-description"] {
+    color: var(--financeos-warning-text);
+  }
+
+  .financeos-alert-success {
+    border-color: var(--financeos-success-border);
+    background: var(--financeos-success-bg);
+    color: var(--financeos-success-text);
+  }
+
+  .financeos-alert-success-title {
+    color: var(--financeos-success-title);
+  }
+
+  .financeos-alert-success-icon {
+    color: var(--financeos-success-icon);
+  }
+
+  .financeos-alert-success > svg,
+  .financeos-alert-success [data-slot="alert-icon"] {
+    color: var(--financeos-success-icon);
+  }
+
+  .financeos-alert-success [data-slot="alert-title"] {
+    color: var(--financeos-success-title);
+  }
+
+  .financeos-alert-success [data-slot="alert-description"] {
+    color: var(--financeos-success-text);
+  }
+
+  .financeos-alert-error {
+    border-color: var(--financeos-error-border);
+    background: var(--financeos-error-bg);
+    color: var(--financeos-error-text);
+  }
+
+  .financeos-alert-error-title {
+    color: var(--financeos-error-title);
+  }
+
+  .financeos-alert-error-icon {
+    color: var(--financeos-error-icon);
+  }
+
+  .financeos-alert-error > svg,
+  .financeos-alert-error [data-slot="alert-icon"] {
+    color: var(--financeos-error-icon);
+  }
+
+  .financeos-alert-error [data-slot="alert-title"] {
+    color: var(--financeos-error-title);
+  }
+
+  .financeos-alert-error [data-slot="alert-description"] {
+    color: var(--financeos-error-text);
+  }
+
+  .financeos-alert-info {
+    border-color: var(--financeos-info-border);
+    background: var(--financeos-info-bg);
+    color: var(--financeos-info-text);
+  }
+
+  .financeos-alert-info-title {
+    color: var(--financeos-info-title);
+  }
+
+  .financeos-alert-info-icon {
+    color: var(--financeos-info-icon);
+  }
+
+  .financeos-alert-info > svg,
+  .financeos-alert-info [data-slot="alert-icon"] {
+    color: var(--financeos-info-icon);
+  }
+
+  .financeos-alert-info [data-slot="alert-title"] {
+    color: var(--financeos-info-title);
+  }
+
+  .financeos-alert-info [data-slot="alert-description"] {
+    color: var(--financeos-info-text);
+  }
+
+  .financeos-theme-light .financeos-premium [class*="bg-[#0B0B0C]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#121418]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#16181D]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#1A1D23]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#1C1F26]"],
+  .financeos-theme-light [class*="bg-[#0B0B0C]"],
+  .financeos-theme-light [class*="bg-[#16181D]"],
+  .financeos-theme-light [data-slot="dropdown-menu-content"],
+  .financeos-theme-light [data-slot="context-menu-content"],
+  .financeos-theme-light [data-slot="menubar-content"],
+  .financeos-theme-light [data-slot="navigation-menu-content"],
+  .financeos-theme-light [data-slot="dialog-content"],
+  .financeos-theme-light [data-slot="alert-dialog-content"],
+  .financeos-theme-light [data-slot="sheet-content"],
+  .financeos-theme-light [data-slot="drawer-content"],
+  .financeos-theme-light [data-slot="popover-content"],
+  .financeos-theme-light [data-slot="hover-card-content"],
+  .financeos-theme-light [data-slot="tooltip-content"],
+  .financeos-theme-light [data-slot="select-content"],
+  .financeos-theme-light [data-slot="chart-tooltip"],
+  .financeos-theme-light [data-slot="command"] {
+    background-color: var(--financeos-surface) !important;
+    color: var(--financeos-text-primary) !important;
+  }
+
+  .financeos-theme-light .financeos-premium [class*="bg-[#0F1115]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#121418]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#1C1F26]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#222630]"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#252933]"],
+  .financeos-theme-light [class*="bg-[#0F1115]"],
+  .financeos-theme-light [class*="bg-[#121418]"],
+  .financeos-theme-light [class*="bg-[#1C1F26]"],
+  .financeos-theme-light [class*="bg-[#222630]"],
+  .financeos-theme-light [class*="bg-[#252933]"] {
+    background-color: var(--financeos-surface-elevated) !important;
+  }
+
+  .financeos-theme-light .financeos-premium [class*="hover:bg-[#1C1F26]"]:hover,
+  .financeos-theme-light .financeos-premium [class*="hover:bg-[#20242C]"]:hover,
+  .financeos-theme-light .financeos-premium [class*="hover:bg-[#222630]"]:hover,
+  .financeos-theme-light .financeos-premium [class*="hover:bg-white/"]:hover,
+  .financeos-theme-light [class*="hover:bg-[#1C1F26]"]:hover,
+  .financeos-theme-light [class*="hover:bg-[#20242C]"]:hover,
+  .financeos-theme-light [class*="hover:bg-[#222630]"]:hover,
+  .financeos-theme-light [class*="hover:bg-white/"]:hover,
+  .financeos-theme-light [data-slot="dropdown-menu-item"]:focus,
+  .financeos-theme-light [data-slot="dropdown-menu-sub-trigger"]:focus,
+  .financeos-theme-light [data-slot="context-menu-item"]:focus,
+  .financeos-theme-light [data-slot="menubar-item"]:focus {
+    background-color: var(--financeos-surface-hover) !important;
+    color: var(--financeos-text-primary) !important;
+  }
+
+  .financeos-theme-light .financeos-premium [class*="border-[#252933]"],
+  .financeos-theme-light .financeos-premium [class*="border-[#343946]"],
+  .financeos-theme-light [class*="border-[#252933]"],
+  .financeos-theme-light [class*="border-[#343946]"],
+  .financeos-theme-light [data-slot="dropdown-menu-content"],
+  .financeos-theme-light [data-slot="context-menu-content"],
+  .financeos-theme-light [data-slot="menubar-content"],
+  .financeos-theme-light [data-slot="dialog-content"],
+  .financeos-theme-light [data-slot="alert-dialog-content"],
+  .financeos-theme-light [data-slot="sheet-content"],
+  .financeos-theme-light [data-slot="drawer-content"],
+  .financeos-theme-light [data-slot="popover-content"],
+  .financeos-theme-light [data-slot="hover-card-content"],
+  .financeos-theme-light [data-slot="tooltip-content"],
+  .financeos-theme-light [data-slot="select-content"],
+  .financeos-theme-light [data-slot="chart-tooltip"] {
+    border-color: var(--financeos-border) !important;
+  }
+
+  .financeos-theme-light .financeos-premium [class*="text-[#F8FAFC]"],
+  .financeos-theme-light .financeos-premium [class*="text-[#CBD5E1]"],
+  .financeos-theme-light .financeos-premium [class*="text-slate-100"],
+  .financeos-theme-light .financeos-premium [class*="text-slate-200"],
+  .financeos-theme-light [class*="text-[#F8FAFC]"],
+  .financeos-theme-light [class*="text-[#CBD5E1]"],
+  .financeos-theme-light [class*="text-slate-100"],
+  .financeos-theme-light [class*="text-slate-200"],
+  .financeos-theme-light [data-slot="dialog-title"],
+  .financeos-theme-light [data-slot="alert-dialog-title"],
+  .financeos-theme-light [data-slot="sheet-title"],
+  .financeos-theme-light [data-slot="drawer-title"],
+  .financeos-theme-light [data-slot="dropdown-menu-label"] {
+    color: var(--financeos-text-primary) !important;
+  }
+
+  .financeos-theme-light .financeos-premium [class*="text-[#94A3B8]"],
+  .financeos-theme-light .financeos-premium [class*="text-[#64748B]"],
+  .financeos-theme-light .financeos-premium [class*="text-slate-300"],
+  .financeos-theme-light .financeos-premium [class*="text-slate-400"],
+  .financeos-theme-light [class*="text-[#94A3B8]"],
+  .financeos-theme-light [class*="text-[#64748B]"],
+  .financeos-theme-light [class*="text-slate-300"],
+  .financeos-theme-light [class*="text-slate-400"],
+  .financeos-theme-light [data-slot="dialog-description"],
+  .financeos-theme-light [data-slot="alert-dialog-description"],
+  .financeos-theme-light [data-slot="sheet-description"],
+  .financeos-theme-light [data-slot="drawer-description"],
+  .financeos-theme-light [data-slot="dropdown-menu-item"] {
+    color: var(--financeos-text-muted) !important;
+  }
+
+  .financeos-theme-light .financeos-premium input,
+  .financeos-theme-light .financeos-premium textarea,
+  .financeos-theme-light .financeos-premium select,
+  .financeos-theme-light [data-slot="input"],
+  .financeos-theme-light [data-slot="textarea"] {
+    border-color: var(--financeos-input-border) !important;
+    background-color: var(--financeos-input-bg) !important;
+    color: var(--financeos-text-primary) !important;
+  }
+
+  .financeos-theme-light [data-slot="dialog-overlay"],
+  .financeos-theme-light [data-slot="alert-dialog-overlay"],
+  .financeos-theme-light [data-slot="sheet-overlay"],
+  .financeos-theme-light [data-slot="drawer-overlay"] {
+    background-color: var(--financeos-overlay) !important;
+  }
+
+  .financeos-theme-light .financeos-today-cell {
+    background-color: #EDE9FE !important;
+    border: 1px solid rgb(139 92 246 / 0.22);
+    color: #6D28D9 !important;
+  }
+
+  .financeos-theme-light .financeos-premium [class*="bg-slate-900"],
+  .financeos-theme-light .financeos-premium [class*="bg-gray-900"],
+  .financeos-theme-light .financeos-premium [class*="bg-black"],
+  .financeos-theme-light .financeos-premium [class*="bg-[#000"] {
+    background-color: var(--financeos-icon-container) !important;
+  }
+
+  .financeos-theme-light .financeos-premium [class*="fill-white"] {
+    fill: var(--financeos-text-primary) !important;
+  }
+
+  .financeos-theme-light .financeos-premium .text-emerald-300,
+  .financeos-theme-light .financeos-premium .text-cyan-300 {
+    color: #047857 !important;
+  }
+
+  .financeos-theme-light .financeos-premium .text-orange-300 {
+    color: #C2410C !important;
+  }
+
+  .financeos-theme-light .financeos-premium .text-rose-300 {
+    color: #E11D48 !important;
+  }
+
+  .financeos-theme-light .financeos-premium .text-violet-200 {
+    color: #7C3AED !important;
+  }
+
+  .financeos-theme-light .financeos-premium .recharts-tooltip-cursor {
+    fill: rgb(15 23 42 / 0.06) !important;
+  }
+
+  .financeos-premium .bg-green-50 {
+    background-color: rgb(34 197 94 / 0.12) !important;
+  }
+
+  .financeos-premium .bg-blue-50 {
+    background-color: rgb(59 130 246 / 0.14) !important;
+  }
+
+  .financeos-premium .bg-red-50 {
+    background-color: rgb(244 63 94 / 0.14) !important;
+  }
+
+  .financeos-premium .bg-orange-50 {
+    background-color: rgb(249 115 22 / 0.14) !important;
+  }
+
+  .financeos-premium .bg-purple-50 {
+    background-color: rgb(168 85 247 / 0.14) !important;
+  }
+
+  .financeos-premium .bg-green-100 {
+    background-color: rgb(34 197 94 / 0.18) !important;
+  }
+
+  .financeos-premium .bg-blue-100 {
+    background-color: rgb(59 130 246 / 0.2) !important;
+  }
+
+  .financeos-premium .bg-red-100 {
+    background-color: rgb(244 63 94 / 0.2) !important;
+  }
+
+  .financeos-premium .bg-orange-100 {
+    background-color: rgb(249 115 22 / 0.2) !important;
+  }
+
+  .financeos-premium .bg-purple-100 {
+    background-color: rgb(168 85 247 / 0.2) !important;
+  }
+
+  @media (max-width: 639px) {
+    .financeos-premium .grid-cols-2,
+    .financeos-premium .grid-cols-3,
+    .financeos-premium .grid-cols-4,
+    .financeos-premium .grid-cols-5 {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .financeos-premium button,
+    .financeos-premium a[role="button"] {
+      min-height: 2.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .financeos-premium *,
+    .financeos-premium *::before,
+    .financeos-premium *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.001ms !important;
+    }
+
+    .financeos-premium [data-slot="button"]:hover,
+    .financeos-premium button:not([data-slot]):hover,
+    .financeos-premium [data-slot="card"]:hover {
+      transform: none !important;
+    }
+  }
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /**
+  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
+  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+  */
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}
+
+@layer components {
+  .financeos-toaster [data-sonner-toast],
+  [data-sonner-toast].financeos-toast {
+    border: 1px solid #252933 !important;
+    border-radius: 20px !important;
+    background: linear-gradient(180deg, rgb(28 31 38 / 0.98), rgb(22 24 29 / 0.98)) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 22px 60px rgb(0 0 0 / 0.42) !important;
+    backdrop-filter: blur(18px);
+  }
+
+  .financeos-toaster [data-sonner-toast][data-mounted="true"] {
+    animation: financeos-toast-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .financeos-toaster [data-sonner-toast][data-removed="true"] {
+    animation: financeos-toast-out 170ms ease forwards;
+  }
+
+  .financeos-toast-title {
+    color: #f8fafc !important;
+    font-weight: 700 !important;
+  }
+
+  .financeos-toast-description {
+    color: #94a3b8 !important;
+  }
+
+  .financeos-toast-action {
+    border-radius: 999px !important;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+    color: white !important;
+  }
+
+  .financeos-toast-cancel,
+  .financeos-toast-close {
+    border-color: #252933 !important;
+    background: #1c1f26 !important;
+    color: #cbd5e1 !important;
+  }
+
+  .financeos-toast-success {
+    border-color: rgb(0 214 143 / 0.35) !important;
+  }
+
+  .financeos-toast-error {
+    border-color: rgb(239 68 68 / 0.38) !important;
+  }
+
+  .financeos-toast-warning {
+    border-color: rgb(245 158 11 / 0.38) !important;
+  }
+
+  .financeos-toast-info {
+    border-color: rgb(139 92 246 / 0.38) !important;
+  }
+
+  .financeos-theme-light .financeos-toaster [data-sonner-toast],
+  .financeos-theme-light [data-sonner-toast].financeos-toast {
+    border-color: #E2E8F0 !important;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(250 251 253 / 0.98)) !important;
+    color: #0F172A !important;
+    box-shadow: 0 22px 60px rgb(15 23 42 / 0.14) !important;
+  }
+
+  .financeos-theme-light .financeos-toast-title {
+    color: #0F172A !important;
+  }
+
+  .financeos-theme-light .financeos-toast-description {
+    color: #475569 !important;
+  }
+
+  .financeos-theme-light .financeos-toast-cancel,
+  .financeos-theme-light .financeos-toast-close {
+    border-color: #E2E8F0 !important;
+    background: #EEF2F7 !important;
+    color: #475569 !important;
+  }
+}
+
+@keyframes financeos-toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes financeos-toast-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.98);
+  }
+}
