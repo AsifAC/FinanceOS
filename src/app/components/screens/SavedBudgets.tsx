@@ -5,6 +5,7 @@ import {
   BarChart3,
   CalendarDays,
   ChevronDown,
+  Download,
   FileBarChart,
   Folder,
   Pencil,
@@ -21,6 +22,7 @@ import { MONTHS } from "../../lib/constants";
 import { SavedMonthlyBudget, SavedYearlyBudget, useFinanceData } from "../../lib/financeStore";
 import { cn } from "../ui/utils";
 import { formatDateInTimezone } from "../../lib/datePreferences";
+import { downloadAnnualReportPdf } from "../../services/generateAnnualReportPdf";
 
 type Selection =
   | { type: "month"; id: string }
@@ -180,12 +182,27 @@ function MonthSummary({
 
 function YearSummary({ snapshot }: { snapshot: SavedYearlyBudget }) {
   const {
+    state,
     timezone,
     deleteSavedYearlyBudget,
     updateSavedYearlyBudgetNotes,
     saveYearlyBudgetSnapshot,
   } = useFinanceData();
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const summary = snapshot.summary_json;
+
+  async function handleDownloadAnnualReport() {
+    try {
+      setIsGeneratingPdf(true);
+      await downloadAnnualReportPdf(snapshot, state.setupProfile?.budgetName);
+      toast.success("Annual report PDF downloaded.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not generate PDF. Please try again.");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -196,6 +213,16 @@ function YearSummary({ snapshot }: { snapshot: SavedYearlyBudget }) {
           <p className="mt-1 text-sm text-slate-400">Saved {savedDate(snapshot.saved_at, timezone)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={handleDownloadAnnualReport}
+            disabled={isGeneratingPdf}
+          >
+            <Download className="h-4 w-4" />
+            {isGeneratingPdf ? "Generating PDF..." : "Download Annual Report PDF"}
+          </Button>
           <Button
             size="sm"
             variant="secondary"

@@ -1,4 +1,5 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarDays, Check, ChevronDown } from "lucide-react";
 import { cn } from "../ui/utils";
 
@@ -27,7 +28,9 @@ export function MonthSelector({
 }: MonthSelectorProps) {
   const [open, setOpen] = useState(false);
   const [focusedMonth, setFocusedMonth] = useState(selectedMonth);
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
   const rootRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const selectedLabel = [months[selectedMonth], year].filter(Boolean).join(" ");
   const normalizedYear = year ? String(year) : "";
   const availableYears = yearOptions?.length
@@ -38,7 +41,9 @@ export function MonthSelector({
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || popoverRef.current?.contains(target)) return;
+      setOpen(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
@@ -56,6 +61,46 @@ export function MonthSelector({
   useEffect(() => {
     if (open) setFocusedMonth(selectedMonth);
   }, [open, selectedMonth]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function updatePopoverPosition() {
+      const trigger = rootRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const margin = 12;
+      const gap = 8;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const panelWidth = Math.min(336, viewportWidth - margin * 2);
+      const left = Math.min(Math.max(rect.left, margin), viewportWidth - panelWidth - margin);
+      const availableBelow = viewportHeight - rect.bottom - gap - margin;
+      const availableAbove = rect.top - gap - margin;
+      const preferredHeight = normalizedYear ? 300 : 240;
+      const openBelow = availableBelow >= preferredHeight || availableBelow >= availableAbove;
+      const availableHeight = openBelow ? availableBelow : availableAbove;
+      const maxHeight = Math.max(140, Math.min(360, availableHeight));
+      const rawTop = openBelow ? rect.bottom + gap : rect.top - gap - maxHeight;
+      const top = Math.min(Math.max(rawTop, margin), viewportHeight - margin - maxHeight);
+
+      setPopoverStyle({
+        left,
+        top,
+        width: panelWidth,
+        maxHeight,
+      });
+    }
+
+    updatePopoverPosition();
+    window.addEventListener("resize", updatePopoverPosition);
+    window.addEventListener("scroll", updatePopoverPosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePopoverPosition);
+      window.removeEventListener("scroll", updatePopoverPosition, true);
+    };
+  }, [normalizedYear, open]);
 
   function selectMonth(month: number) {
     onMonthChange(month);
@@ -110,7 +155,7 @@ export function MonthSelector({
   }
 
   return (
-    <div ref={rootRef} className={cn("relative min-w-[11rem]", className)}>
+    <div ref={rootRef} className={cn("relative flex min-w-[11rem] items-center", className)}>
       <button
         type="button"
         aria-label={label}
@@ -119,7 +164,7 @@ export function MonthSelector({
         onClick={() => setOpen((value) => !value)}
         onKeyDown={handleTriggerKeyDown}
         className={cn(
-          "group flex h-11 w-full items-center justify-between gap-3 rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface)] px-3 text-left shadow-[var(--financeos-shadow-card)] backdrop-blur-xl transition-all",
+          "group flex h-11 w-full items-center justify-between gap-3 rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface)] px-3 py-0 text-left leading-none shadow-[var(--financeos-shadow-card)] backdrop-blur-xl transition-all",
           "hover:border-[var(--financeos-border-strong)] hover:bg-[var(--financeos-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6]/60",
           open && "border-[#8B5CF6]/60 bg-[var(--financeos-surface-hover)]",
         )}
@@ -136,13 +181,15 @@ export function MonthSelector({
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-[var(--financeos-text-muted)] transition-transform", open && "rotate-180 text-[var(--financeos-text-primary)]")} />
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
+          ref={popoverRef}
           role="listbox"
           aria-label={label}
           tabIndex={-1}
           onKeyDown={handleKeyboardNavigation}
-          className="absolute right-0 z-50 mt-2 w-[min(21rem,calc(100vw-2rem))] rounded-[22px] border border-[var(--financeos-border)] bg-[var(--financeos-surface)] p-2 shadow-[var(--financeos-shadow-card-hover)] backdrop-blur-xl"
+          style={popoverStyle}
+          className="financeos-month-selector-popover fixed z-[9999] overflow-y-auto overscroll-contain rounded-[22px] border border-[var(--financeos-border)] bg-[var(--financeos-surface)] p-2 shadow-[var(--financeos-shadow-card-hover)] backdrop-blur-xl"
         >
           <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
             {months.map((month, index) => {
@@ -190,6 +237,7 @@ export function MonthSelector({
             </div>
           )}
         </div>
+        , document.body
       )}
     </div>
   );

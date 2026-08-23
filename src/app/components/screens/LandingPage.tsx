@@ -52,7 +52,10 @@ const trustItems = [
 
 function LandingButton({ to, children, variant = "primary", icon = false }: LandingButtonProps) {
   return (
-    <Link to={to} className={`financeos-landing-button financeos-landing-button-${variant}`}>
+    <Link
+      to={to}
+      className={`financeos-landing-button financeos-landing-button-${variant} landing-btn landing-btn-${variant}`}
+    >
       <span>{children}</span>
       {icon && <ArrowRight className="h-4 w-4" />}
     </Link>
@@ -124,7 +127,7 @@ function LandingHero({ ctas }: { ctas: LandingCtas }) {
           <Sparkles className="h-4 w-4" />
           Personal finance command center
         </div>
-        <h1>Your financial life, organized in one operating system.</h1>
+        <h1>Your financial life, organized.</h1>
         <p>
           Track income, expenses, savings, debt, payment methods, reports, and monthly budget snapshots from one modern FinanceOS dashboard.
         </p>
@@ -167,7 +170,7 @@ function LandingFeatureCards({ ctas }: { ctas: LandingCtas }) {
   return (
     <section className="financeos-feature-section">
       <div className="financeos-section-heading financeos-section-heading-centered financeos-reveal">
-        <h2>Send your money plan into motion</h2>
+        <h2>Put your money plan in motion</h2>
       </div>
       <div className="financeos-feature-card-grid">
         <article className="financeos-cinematic-card financeos-reveal">
@@ -202,28 +205,82 @@ function LandingDashboardShowcase({ ctas }: { ctas: LandingCtas }) {
             <span>Reports</span>
           </div>
           <div className="financeos-monitor-charts">
-            <div className="financeos-candles">
-              {Array.from({ length: 18 }, (_, index) => (
-                <span key={index} style={{ "--candle-index": index } as CSSProperties} />
+            <div className="financeos-cash-flow-card">
+              <div className="financeos-dashboard-card-header">
+                <span>Cash flow</span>
+                <strong>$4,820 left</strong>
+              </div>
+              <svg className="financeos-cash-flow-chart" viewBox="0 0 420 190" role="img" aria-label="Cash flow line chart">
+                <defs>
+                  <linearGradient id="cashFlowFill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#C6FF00" stopOpacity="0.34" />
+                    <stop offset="100%" stopColor="#C6FF00" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path className="financeos-chart-area" d="M22 136 C72 118 92 92 133 102 C178 113 197 55 242 67 C282 78 304 38 346 49 C376 57 392 34 404 29 L404 170 L22 170 Z" />
+                <path className="financeos-chart-line" d="M22 136 C72 118 92 92 133 102 C178 113 197 55 242 67 C282 78 304 38 346 49 C376 57 392 34 404 29" />
+                {[22, 133, 242, 346, 404].map((x, index) => (
+                  <circle key={x} className="financeos-chart-dot" cx={x} cy={[136, 102, 67, 49, 29][index]} r="4" />
+                ))}
+                {["Jan", "Mar", "May", "Jul", "Sep"].map((label, index) => (
+                  <text key={label} x={22 + index * 95} y="184">{label}</text>
+                ))}
+              </svg>
+              <div className="financeos-cash-flow-legend">
+                <span><i className="financeos-legend-income" />Income</span>
+                <span><i className="financeos-legend-expenses" />Expenses</span>
+                <span><i className="financeos-legend-left" />Amount left</span>
+              </div>
+            </div>
+            <div className="financeos-budget-mix-card">
+              <div className="financeos-dashboard-card-header">
+                <span>Budget mix</span>
+                <strong>88%</strong>
+              </div>
+              <div className="financeos-donut">
+                <span />
+              </div>
+              <div className="financeos-budget-mix-list">
+                {[
+                  ["Needs", "52%"],
+                  ["Savings", "24%"],
+                  ["Debt", "12%"],
+                ].map(([label, value]) => (
+                  <p key={label}><span>{label}</span><strong>{value}</strong></p>
+                ))}
+              </div>
+            </div>
+            <div className="financeos-category-bars-card">
+              <div className="financeos-dashboard-card-header">
+                <span>Category plan</span>
+                <strong>On track</strong>
+              </div>
+              {[
+                ["Housing", "78%"],
+                ["Food", "56%"],
+                ["Savings", "68%"],
+                ["Debt", "42%"],
+              ].map(([label, value]) => (
+                <div key={label} className="financeos-category-plan-row">
+                  <span>{label}</span>
+                  <div><i style={{ "--bar-width": value } as CSSProperties} /></div>
+                  <strong>{value}</strong>
+                </div>
               ))}
-            </div>
-            <div className="financeos-donut">
-              <span />
-            </div>
-            <div className="financeos-savings-bars">
-              <span />
-              <span />
-              <span />
-              <span />
             </div>
           </div>
         </div>
-        <div className="financeos-monitor-stand" />
+        <div className="financeos-showcase-float financeos-showcase-float-left">
+          <span>$4,820 left</span>
+        </div>
+        <div className="financeos-showcase-float financeos-showcase-float-right">
+          <span>3 bills upcoming</span>
+        </div>
       </div>
       <div className="financeos-showcase-copy financeos-reveal">
-        <span>Intuitive budgeting tools</span>
-        <h2>Build your monthly strategy and track financial trends seamlessly.</h2>
-        <p>Review monthly cash flow, category breakdowns, savings progress, and debt reduction without losing the bigger picture.</p>
+        <span>Budget dashboard</span>
+        <h2>See the month clearly before money moves.</h2>
+        <p>Review cash flow, categories, savings progress, and debt reduction from one focused operating view.</p>
         <LandingButton to={ctas.primary.to} variant="primary">View dashboard</LandingButton>
       </div>
     </section>

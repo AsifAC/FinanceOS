@@ -170,6 +170,7 @@ type FinanceAction =
   | { type: "UPDATE_SAVED_MONTHLY_BUDGET_NOTES"; id: string; notes: string }
   | { type: "UPDATE_SAVED_YEARLY_BUDGET_NOTES"; id: string; notes: string }
   | { type: "COMPLETE_SETUP"; profile: SetupProfile }
+  | { type: "RESET_PREVIEW_DATA" }
   | { type: "RESET_APP_DATA" };
 
 const emptyState: FinanceState = {
@@ -192,24 +193,13 @@ const emptyState: FinanceState = {
   savedYearlyBudgets: [],
 };
 
-function loadPreviewEnabled() {
-  if (!DEV_PREVIEW_MODE || typeof window === "undefined") return false;
-  const saved = window.localStorage.getItem(DEV_PREVIEW_STORAGE_KEY);
-  return saved === null ? DEV_PREVIEW_MODE : saved === "true";
-}
-
-function mergeUniqueById<T extends { id: string }>(realItems: T[], previewItems: T[]) {
-  const realIds = new Set(realItems.map((item) => item.id));
-  return [...realItems, ...previewItems.filter((item) => !realIds.has(item.id))];
-}
-
-function withPreviewData(state: FinanceState, previewEnabled: boolean): FinanceState {
-  if (!previewEnabled) return state;
+function createPreviewState(selectedMonth = emptyState.selectedMonth): FinanceState {
   return {
-    ...state,
+    ...emptyState,
     activeYear: DEV_PREVIEW_YEAR,
+    selectedMonth,
     setupCompleted: true,
-    setupProfile: state.setupProfile ?? {
+    setupProfile: {
       budgetName: "Developer Preview Budget",
       year: DEV_PREVIEW_YEAR,
       startMonth: "January",
@@ -219,18 +209,24 @@ function withPreviewData(state: FinanceState, previewEnabled: boolean): FinanceS
       expectedSavings: "1200",
       expectedDebt: "520",
       expectedExpenses: "3600",
-      startDayOfWeek: state.startDayOfWeek,
-      timezone: state.timezone,
-      paymentMethods: state.paymentMethods,
+      startDayOfWeek: emptyState.startDayOfWeek,
+      timezone: emptyState.timezone,
+      paymentMethods: [],
     },
-    budgetYears: mergeUniqueById(state.budgetYears, mockFinanceData.budgetYears),
-    categories: mergeUniqueById(state.categories, mockFinanceData.categories),
-    transactions: mergeUniqueById(state.transactions, mockFinanceData.transactions),
-    expectedAmounts: state.expectedAmounts.length ? state.expectedAmounts : mockFinanceData.expectedAmounts,
-    paymentPlans: mergeUniqueById(state.paymentPlans, mockFinanceData.paymentPlans),
-    savedMonthlyBudgets: mergeUniqueById(state.savedMonthlyBudgets, mockFinanceData.savedMonthlyBudgets),
-    savedYearlyBudgets: mergeUniqueById(state.savedYearlyBudgets, mockFinanceData.savedYearlyBudgets),
+    budgetYears: mockFinanceData.budgetYears,
+    categories: mockFinanceData.categories,
+    transactions: mockFinanceData.transactions,
+    expectedAmounts: mockFinanceData.expectedAmounts,
+    paymentPlans: mockFinanceData.paymentPlans,
+    savedMonthlyBudgets: mockFinanceData.savedMonthlyBudgets,
+    savedYearlyBudgets: mockFinanceData.savedYearlyBudgets,
   };
+}
+
+function loadPreviewEnabled() {
+  if (!DEV_PREVIEW_MODE || typeof window === "undefined") return false;
+  const saved = window.localStorage.getItem(DEV_PREVIEW_STORAGE_KEY);
+  return saved === null ? DEV_PREVIEW_MODE : saved === "true";
 }
 
 function toNumber(value: string | number | undefined) {
@@ -630,6 +626,8 @@ function reducer(state: FinanceState, action: FinanceAction): FinanceState {
         expectedAmounts: repeatedPlan,
       };
     }
+    case "RESET_PREVIEW_DATA":
+      return createPreviewState(state.selectedMonth);
     case "RESET_APP_DATA":
       resetSetup();
       return emptyState;
@@ -791,6 +789,7 @@ const FinanceContext = createContext<FinanceContextValue | null>(null);
 
 export function FinanceDataProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
+  const [previewState, previewDispatch] = useReducer(reducer, undefined, () => createPreviewState());
   const [previewModeEnabled, setPreviewModeEnabledState] = useState(loadPreviewEnabled);
 
   useEffect(() => {
@@ -803,7 +802,8 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
     }
   }, [previewModeEnabled]);
 
-  const readState = useMemo(() => withPreviewData(state, previewModeEnabled), [previewModeEnabled, state]);
+  const readState = previewModeEnabled ? previewState : state;
+  const activeDispatch = previewModeEnabled ? previewDispatch : dispatch;
 
   const activeTransactions = useMemo(
     () => filterTransactionsByYear(readState.transactions, readState.activeYear),
@@ -832,53 +832,63 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
     pendingTransactions,
     savedMonthlyBudgets: readState.savedMonthlyBudgets,
     savedYearlyBudgets: readState.savedYearlyBudgets,
-    setActiveYear: (year) => dispatch({ type: "SET_ACTIVE_YEAR", year }),
-    setSelectedMonth: (month) => dispatch({ type: "SET_SELECTED_MONTH", month }),
-    updatePreferences: (updates) => dispatch({ type: "UPDATE_PREFERENCES", updates }),
-    addPaymentMethod: (paymentMethod) => dispatch({ type: "ADD_PAYMENT_METHOD", paymentMethod: { id: makeId("payment-method"), ...paymentMethod } }),
-    updatePaymentMethod: (id, updates) => dispatch({ type: "UPDATE_PAYMENT_METHOD", id, updates }),
-    deletePaymentMethod: (id) => dispatch({ type: "DELETE_PAYMENT_METHOD", id }),
-    setPreviewModeEnabled: setPreviewModeEnabledState,
-    addCategory: (category) => dispatch({ type: "ADD_CATEGORY", category: { id: makeId("category"), ...category } }),
-    updateCategory: (id, updates) => dispatch({ type: "UPDATE_CATEGORY", id, updates }),
-    deleteCategory: (id) => dispatch({ type: "DELETE_CATEGORY", id }),
-    addTransaction: (transaction) => dispatch({ type: "ADD_TRANSACTION", transaction: { id: makeId("transaction"), ...transaction } }),
-    addTransactions: (transactions) => dispatch({
+    setActiveYear: (year) => activeDispatch({ type: "SET_ACTIVE_YEAR", year }),
+    setSelectedMonth: (month) => activeDispatch({ type: "SET_SELECTED_MONTH", month }),
+    updatePreferences: (updates) => activeDispatch({ type: "UPDATE_PREFERENCES", updates }),
+    addPaymentMethod: (paymentMethod) => activeDispatch({ type: "ADD_PAYMENT_METHOD", paymentMethod: { id: makeId("payment-method"), ...paymentMethod } }),
+    updatePaymentMethod: (id, updates) => activeDispatch({ type: "UPDATE_PAYMENT_METHOD", id, updates }),
+    deletePaymentMethod: (id) => activeDispatch({ type: "DELETE_PAYMENT_METHOD", id }),
+    setPreviewModeEnabled: (enabled) => {
+      if (enabled) previewDispatch({ type: "SET_SELECTED_MONTH", month: state.selectedMonth });
+      setPreviewModeEnabledState(enabled);
+    },
+    addCategory: (category) => activeDispatch({ type: "ADD_CATEGORY", category: { id: makeId("category"), ...category } }),
+    updateCategory: (id, updates) => activeDispatch({ type: "UPDATE_CATEGORY", id, updates }),
+    deleteCategory: (id) => activeDispatch({ type: "DELETE_CATEGORY", id }),
+    addTransaction: (transaction) => activeDispatch({ type: "ADD_TRANSACTION", transaction: { id: makeId("transaction"), ...transaction } }),
+    addTransactions: (transactions) => activeDispatch({
       type: "ADD_TRANSACTIONS",
       transactions: transactions.map((transaction) => ({ id: makeId("transaction"), ...transaction })),
     }),
-    updateTransaction: (id, updates) => dispatch({ type: "UPDATE_TRANSACTION", id, updates }),
-    deleteTransaction: (id) => dispatch({ type: "DELETE_TRANSACTION", id }),
-    updateMonthlyPlan: (month, plan) => dispatch({ type: "UPDATE_MONTHLY_PLAN", month, plan }),
-    addPaymentPlan: (plan) => dispatch({
+    updateTransaction: (id, updates) => activeDispatch({ type: "UPDATE_TRANSACTION", id, updates }),
+    deleteTransaction: (id) => activeDispatch({ type: "DELETE_TRANSACTION", id }),
+    updateMonthlyPlan: (month, plan) => activeDispatch({ type: "UPDATE_MONTHLY_PLAN", month, plan }),
+    addPaymentPlan: (plan) => activeDispatch({
       type: "ADD_PAYMENT_PLAN",
       plan: {
         id: makeId("payment-plan"),
         ...plan,
-        nextDueDate: plan.nextDueDate ?? nextPaymentDate(plan.dueDay, state.activeYear),
+        nextDueDate: plan.nextDueDate ?? nextPaymentDate(plan.dueDay, readState.activeYear),
       },
     }),
-    updatePaymentPlan: (id, updates) => dispatch({ type: "UPDATE_PAYMENT_PLAN", id, updates }),
-    deletePaymentPlan: (id) => dispatch({ type: "DELETE_PAYMENT_PLAN", id }),
+    updatePaymentPlan: (id, updates) => activeDispatch({ type: "UPDATE_PAYMENT_PLAN", id, updates }),
+    deletePaymentPlan: (id) => activeDispatch({ type: "DELETE_PAYMENT_PLAN", id }),
     markTransactionPaid: (id) => {
       if (id.startsWith("payment-plan:")) {
-        dispatch({ type: "MARK_PAYMENT_PLAN_PAID", id: id.replace("payment-plan:", "") });
+        activeDispatch({ type: "MARK_PAYMENT_PLAN_PAID", id: id.replace("payment-plan:", "") });
       } else {
-        dispatch({ type: "MARK_TRANSACTION_PAID", id });
+        activeDispatch({ type: "MARK_TRANSACTION_PAID", id });
       }
     },
-    saveMonthlyBudgetSnapshot: (year, month, mode = "overwrite") => dispatch({ type: "SAVE_MONTHLY_BUDGET", year, month, mode }),
-    saveYearlyBudgetSnapshot: (year, mode = "overwrite") => dispatch({ type: "SAVE_YEARLY_BUDGET", year, mode }),
-    deleteSavedMonthlyBudget: (id) => dispatch({ type: "DELETE_SAVED_MONTHLY_BUDGET", id }),
-    deleteSavedYearlyBudget: (id) => dispatch({ type: "DELETE_SAVED_YEARLY_BUDGET", id }),
-    updateSavedMonthlyBudgetNotes: (id, notes) => dispatch({ type: "UPDATE_SAVED_MONTHLY_BUDGET_NOTES", id, notes }),
-    updateSavedYearlyBudgetNotes: (id, notes) => dispatch({ type: "UPDATE_SAVED_YEARLY_BUDGET_NOTES", id, notes }),
+    saveMonthlyBudgetSnapshot: (year, month, mode = "overwrite") => activeDispatch({ type: "SAVE_MONTHLY_BUDGET", year, month, mode }),
+    saveYearlyBudgetSnapshot: (year, mode = "overwrite") => activeDispatch({ type: "SAVE_YEARLY_BUDGET", year, mode }),
+    deleteSavedMonthlyBudget: (id) => activeDispatch({ type: "DELETE_SAVED_MONTHLY_BUDGET", id }),
+    deleteSavedYearlyBudget: (id) => activeDispatch({ type: "DELETE_SAVED_YEARLY_BUDGET", id }),
+    updateSavedMonthlyBudgetNotes: (id, notes) => activeDispatch({ type: "UPDATE_SAVED_MONTHLY_BUDGET_NOTES", id, notes }),
+    updateSavedYearlyBudgetNotes: (id, notes) => activeDispatch({ type: "UPDATE_SAVED_YEARLY_BUDGET_NOTES", id, notes }),
     completeSetup: (profile) => {
-      persistSetupComplete(profile);
-      dispatch({ type: "COMPLETE_SETUP", profile });
+      if (previewModeEnabled) {
+        previewDispatch({ type: "COMPLETE_SETUP", profile });
+      } else {
+        persistSetupComplete(profile);
+        dispatch({ type: "COMPLETE_SETUP", profile });
+      }
     },
-    resetAppData: () => dispatch({ type: "RESET_APP_DATA" }),
-  }), [activePaymentPlans, activeTransactions, actualAmounts, pendingTransactions, previewModeEnabled, readState, state]);
+    resetAppData: () => {
+      if (previewModeEnabled) previewDispatch({ type: "RESET_PREVIEW_DATA" });
+      else dispatch({ type: "RESET_APP_DATA" });
+    },
+  }), [activeDispatch, activePaymentPlans, activeTransactions, actualAmounts, pendingTransactions, previewModeEnabled, readState, state.selectedMonth]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 }

@@ -367,6 +367,52 @@
     background-color: var(--financeos-surface-hover) !important;
   }
 
+  .financeos-month-selector-popover {
+    scrollbar-color: color-mix(in srgb, var(--financeos-border-strong) 72%, transparent) transparent;
+    scrollbar-width: thin;
+  }
+
+  .financeos-month-selector-popover::-webkit-scrollbar {
+    width: 0.45rem;
+  }
+
+  .financeos-month-selector-popover::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .financeos-month-selector-popover::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--financeos-border-strong) 72%, transparent);
+  }
+
+  .financeos-theme-dark .financeos-premium .financeos-category-row:hover {
+    border-color: rgb(198 255 0 / 0.18) !important;
+    background-color: #1C1F26 !important;
+  }
+
+  .financeos-theme-dark .financeos-premium .financeos-category-row:hover .financeos-category-name {
+    color: #F8FAFC !important;
+  }
+
+  .financeos-theme-dark .financeos-premium .financeos-category-row:hover .financeos-category-grip,
+  .financeos-theme-dark .financeos-premium .financeos-category-row:hover .financeos-category-edit-icon {
+    color: #CBD5E1 !important;
+  }
+
+  .financeos-theme-dark .financeos-premium .financeos-category-row:hover .financeos-category-delete-icon {
+    color: #F87171 !important;
+  }
+
+  .financeos-theme-dark .financeos-premium .financeos-category-row:hover .financeos-category-action {
+    color: #CBD5E1 !important;
+  }
+
+  .financeos-theme-dark .financeos-premium .financeos-category-row:hover .financeos-category-action:hover {
+    border-color: rgb(51 65 85 / 0.9) !important;
+    background-color: #20242C !important;
+    color: #F8FAFC !important;
+  }
+
   .financeos-theme-light .financeos-premium {
     --background: #F8FAFC;
     --foreground: #0F172A;

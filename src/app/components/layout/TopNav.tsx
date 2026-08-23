@@ -101,7 +101,7 @@ export function TopNav() {
             </Link>
           </div>
 
-          <div className="order-3 grid min-w-0 gap-2 sm:grid-cols-[minmax(11rem,13rem)_minmax(18rem,auto)] lg:order-none">
+          <div className="order-3 grid min-w-0 items-center gap-2 sm:grid-cols-[minmax(11rem,13rem)_minmax(18rem,auto)] lg:order-none">
             <MonthSelector
               selectedMonth={selectedMonth}
               onMonthChange={setSelectedMonth}
@@ -121,7 +121,7 @@ export function TopNav() {
               asChild
               variant="outline"
               size="icon"
-              className="relative h-10 w-10 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
+              className="relative h-11 w-11 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
             >
               <Link
                 to="/notifications"
@@ -139,7 +139,7 @@ export function TopNav() {
             <Link
               to="/settings"
               aria-label="Settings"
-              className="hidden h-10 w-10 items-center justify-center rounded-full border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[var(--financeos-text-secondary)] shadow-[var(--financeos-shadow-card)] transition-colors hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)] md:flex"
+              className="hidden h-11 w-11 items-center justify-center rounded-full border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[var(--financeos-text-secondary)] shadow-[var(--financeos-shadow-card)] transition-colors hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)] md:flex"
             >
               <Settings className="h-4 w-4" />
             </Link>
@@ -148,7 +148,7 @@ export function TopNav() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-10 gap-2 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-1.5 pr-3 text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
+                  className="h-11 gap-2 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-1.5 pr-3 text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
                   aria-label="Profile menu"
                 >
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-xs font-bold text-white">

@@ -6,12 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { SaveSnapshotActions } from "../archive/SaveSnapshotActions";
 import { ElevatedExpenseDonutChart } from "../charts/ElevatedExpenseDonutChart";
 import {
+  ACTUAL_COLOR,
+  ACTUAL_HOVER_COLOR,
   chartAxisTick,
   chartGridStroke,
   chartLegendStyle,
   chartMutedTick,
   chartTooltipLabelStyle,
   chartTooltipStyle,
+  EXPECTED_COLOR,
+  EXPECTED_HOVER_COLOR,
 } from "../charts/chartTheme";
 import {
   getAmountLeft, getMonthlyAmount,
@@ -23,8 +27,8 @@ export function Reports() {
   const { activeYear, actualAmounts, expectedAmounts, transactions } = useFinanceData();
   const barData = MONTH_SHORT.map((m, i) => ({
     month: m,
-    "Exp. Income": getMonthlyAmount(expectedAmounts, i).income,
-    "Act. Income": getMonthlyAmount(actualAmounts, i).income,
+    Expected: getMonthlyAmount(expectedAmounts, i).income,
+    Actual: getMonthlyAmount(actualAmounts, i).income,
     "Exp. Left": getAmountLeft(getMonthlyAmount(expectedAmounts, i)),
     "Act. Left": getAmountLeft(getMonthlyAmount(actualAmounts, i)),
   }));
@@ -47,7 +51,7 @@ export function Reports() {
   const ytdIncome = actualAmounts.reduce((sum, month) => sum + month.income, 0);
   const ytdSavings = actualAmounts.reduce((sum, month) => sum + month.savings, 0);
   const trackedMonthCount = actualAmounts.filter((month) => month.income || month.savings || month.debt || month.expenses).length;
-  const hasBudgetChartData = barData.some((item) => item["Exp. Income"] || item["Act. Income"] || item["Exp. Left"] || item["Act. Left"]);
+  const hasBudgetChartData = barData.some((item) => item.Expected || item.Actual || item["Exp. Left"] || item["Act. Left"]);
   const hasSavingsTrendData = savingsTrend.some((item) => item.Savings || item.Expected);
   const hasIncomeTrendData = incomeTrend.some((item) => item.Income || item.Expected);
 
@@ -111,16 +115,6 @@ export function Reports() {
             <div className="h-[300px] w-full sm:h-[360px] lg:h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} barSize={18} barGap={5} barCategoryGap="18%" margin={{ top: 14, right: 10, left: 2, bottom: 8 }}>
-                <defs>
-                  <linearGradient id="expectedIncomeGradient" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#00D68F" />
-                    <stop offset="100%" stopColor="#00C26E" />
-                  </linearGradient>
-                  <linearGradient id="actualIncomeGradient" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#3B82F6" />
-                    <stop offset="100%" stopColor="#2563EB" />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="month" tick={chartAxisTick} axisLine={false} tickLine={false} />
                 <YAxis tick={chartMutedTick} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} width={44} />
@@ -128,11 +122,11 @@ export function Reports() {
                   cursor={{ fill: "rgba(255,255,255,0.06)", radius: 12 }}
                   contentStyle={chartTooltipStyle}
                   labelStyle={chartTooltipLabelStyle}
-                  formatter={(v: number) => [`$${v}`, ""]}
+                  formatter={(v: number, name: string) => [`$${v}`, name]}
                 />
                 <Legend iconType="circle" iconSize={9} wrapperStyle={chartLegendStyle} />
-                <Bar dataKey="Exp. Income" fill="url(#expectedIncomeGradient)" radius={[8, 8, 2, 2]} />
-                <Bar dataKey="Act. Income" fill="url(#actualIncomeGradient)" radius={[8, 8, 2, 2]} />
+                <Bar dataKey="Expected" fill={EXPECTED_COLOR} activeBar={{ fill: EXPECTED_HOVER_COLOR }} radius={[8, 8, 2, 2]} />
+                <Bar dataKey="Actual" fill={ACTUAL_COLOR} activeBar={{ fill: ACTUAL_HOVER_COLOR }} radius={[8, 8, 2, 2]} />
               </BarChart>
             </ResponsiveContainer>
             </div>

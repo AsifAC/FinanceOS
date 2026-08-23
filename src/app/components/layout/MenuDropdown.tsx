@@ -58,7 +58,7 @@ export function MenuDropdown() {
         type="button"
         variant="outline"
         size="icon"
-        className="h-10 w-10 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] p-0 text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
+        className="h-11 w-11 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] p-0 text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"

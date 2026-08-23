@@ -98,12 +98,12 @@ export function Categories() {
                     {items.map((cat) => (
                       <div
                         key={cat.id}
-                        className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 group"
+                        className="financeos-category-row group flex items-center gap-3 rounded-lg border border-transparent p-2.5 transition-colors hover:bg-slate-50"
                       >
-                        <GripVertical className="w-3.5 h-3.5 text-slate-300 cursor-grab" />
+                        <GripVertical className="financeos-category-grip h-3.5 w-3.5 cursor-grab text-slate-300" />
                         <span className="text-base">{cat.icon}</span>
                         <div className="flex-1">
-                          <p className="text-sm text-slate-800">{cat.name}</p>
+                          <p className="financeos-category-name text-sm text-slate-800">{cat.name}</p>
                         </div>
                         <div
                           className="w-3 h-3 rounded-full shrink-0"
@@ -113,18 +113,18 @@ export function Categories() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="w-6 h-6"
+                            className="financeos-category-action h-6 w-6"
                             onClick={() => openEdit(cat)}
                           >
-                            <Pencil className="w-3 h-3 text-slate-400" />
+                            <Pencil className="financeos-category-edit-icon h-3 w-3 text-slate-400" />
                           </Button>
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="w-6 h-6"
+                            className="financeos-category-action h-6 w-6"
                             onClick={() => handleDelete(cat.id)}
                           >
-                            <Trash2 className="w-3 h-3 text-red-400" />
+                            <Trash2 className="financeos-category-delete-icon h-3 w-3 text-red-400" />
                           </Button>
                         </div>
                       </div>

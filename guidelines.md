@@ -259,6 +259,132 @@ Testing results:
 - Confirmed subtotal cards show pending income, expenses, savings, and debt totals.
 - Confirmed row removal and clear preview do not dispatch to global state.
 
+#### Supabase Backend Implementation Start - 2026-06-28
+
+Context:
+
+- Supabase MCP server was added and authenticated for project `zmbyqstmgtdbyvczuvki`.
+- Optional Supabase agent skills installation is blocked by npm DNS/network failure:
+  - `getaddrinfo ENOTFOUND registry.npmjs.org`
+- This is an environment connectivity issue, not a FinanceOS app issue.
+- Do not block backend setup on `npx skills add supabase/agent-skills`.
+
+Package status:
+
+- `@supabase/supabase-js` is not installed.
+- Do not request or store the Supabase service role key in this frontend app.
+- Only frontend-safe Supabase variables should be used:
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
+
+Manual setup completed:
+
+- Created `.env.example` with frontend-safe Supabase variables.
+- Created `src/lib/supabaseClient.ts` for the browser Supabase client.
+- Created `docs/backend-setup.md` with manual setup, review, and apply instructions.
+- Created reviewable SQL migrations under `supabase/migrations/`.
+- Created `src/services/` typed service wrappers around the Supabase client.
+- Created `src/hooks/` service-backed hooks for gradual page integration.
+- Generated the required public schema tables:
+  - `profiles`
+  - `user_preferences`
+  - `categories`
+  - `payment_methods`
+  - `transactions`
+  - `expected_transactions`
+  - `savings_goals`
+  - `savings_contributions`
+  - `debts`
+  - `debt_payments`
+  - `budget_snapshots`
+  - `archived_budgets`
+  - `notifications`
+  - `reports_cache`
+  - `uploaded_files`
+- Added user-owned `user_id` columns referencing `auth.users(id)` to every app data table.
+- Added required indexes, including `user_id` indexes and year/month/type lookup indexes.
+- Enabled RLS for all FinanceOS tables.
+- Added select, insert, update, and delete policies scoped to `auth.uid() = user_id`.
+- Added auth signup defaults for profile, user preferences, and default categories.
+- Added private Supabase Storage buckets and object policies scoped to the first path folder matching `auth.uid()::text`.
+- Added `supabase/tests/rls_storage_verification.sql` as manual verification checks for RLS, signup defaults, storage policies, and isolation.
+- No destructive database changes were applied automatically.
+
+Prepared migrations:
+
+- `supabase/migrations/202606280001_core_schema.sql`
+- `supabase/migrations/202606280002_indexes.sql`
+- `supabase/migrations/202606280003_rls_policies.sql`
+- `supabase/migrations/202606280004_auth_defaults.sql`
+- `supabase/migrations/202606280005_storage.sql`
+
+RLS policy rule:
+
+- Every user-owned table must enable RLS.
+- Every user-owned table must include `user_id`.
+- Every select/update/delete policy must use `using (auth.uid() = user_id)`.
+- Every insert/update policy must use `with check (auth.uid() = user_id)`.
+
+Storage bucket rules:
+
+- `avatars`: private signed URL profile images at `{user_id}/avatar.png`.
+- `receipts`: private transaction receipts at `{user_id}/{transaction_id}/{filename}`.
+- `exports`: private annual report PDFs at `{user_id}/{year}/FinanceOS-Annual-Report-{year}.pdf`.
+- `attachments`: private supporting files at `{user_id}/{entity_type}/{entity_id}/{filename}`.
+- Storage object policies must check `(storage.foldername(name))[1] = auth.uid()::text`.
+- Exports stay private unless a signed URL is intentionally generated.
+
+Service and hook architecture:
+
+- `src/services/*Service.ts` files are the Supabase access boundary.
+- Services use the browser Supabase client only and never include service role logic.
+- Services explicitly resolve the authenticated user and also rely on RLS.
+- `src/hooks/*` files wrap services for gradual frontend integration.
+- Existing Preview Mode/mock data stays separate from real Supabase data until a page is intentionally connected.
+
+Integration order:
+
+1. Auth
+2. Profiles
+3. User preferences
+4. Categories
+5. Payment methods
+6. Transactions
+7. Expected transactions
+8. Savings goals
+9. Debts
+10. Dashboard calculations
+11. Reports
+12. Budget snapshots
+13. Archived budgets
+14. PDF exports/storage
+15. Notifications
+
+Retry when network/DNS is available:
+
+```sh
+npm install @supabase/supabase-js
+npx skills add supabase/agent-skills
+```
+
+Remaining TODOs:
+
+- Install `@supabase/supabase-js` after npm can resolve `registry.npmjs.org`.
+- Retry the optional Supabase agent skills install command.
+- Fill local `.env` from `.env.example`.
+- Review SQL migrations before applying them through Supabase Dashboard or CLI.
+- Implement auth UI and account-scoped data loading.
+- Replace placeholder session/logout behavior in `src/app/lib/session.ts`.
+- Add typed row mappers between `FinanceState` and Supabase tables.
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint --if-present` passes/no-ops because no lint script is configured.
+- `npm run typecheck --if-present` passes/no-ops because no typecheck script is configured.
+- `git diff --check` passes for Supabase/backend files.
+- `npm ls @supabase/supabase-js --depth=0` confirms the package is not installed while npm DNS remains unavailable.
+
 #### Settings Page UX/UI Redesign and Light Theme System - 2026-06-21
 
 Light theme color system:
@@ -1245,19 +1371,6 @@ Planned Supabase tables:
 
 ## Important Bugs And Fixes
 
-### Codex Login Token Expired
-
-Issue:
-
-- Codex was installed but login token expired.
-
-Fix:
-
-```bash
-codex logout
-codex login
-```
-
 ### `MONTHS is not defined`
 
 Issue:
@@ -1390,11 +1503,6 @@ npm run dev
 npm run build
 npm run lint --if-present
 ```
-
-Known environment note:
-
-- In the Codex sandbox, `npm run dev` may fail to bind to localhost with `listen EPERM`.
-- `npm run build` has been the reliable verification command in-session.
 
 ## Next Steps
 
@@ -1844,6 +1952,187 @@ Landing page animation speed rules:
 - Prefer `cubic-bezier(0.22, 1, 0.36, 1)` or `ease-out` for premium smoothness.
 - `prefers-reduced-motion: reduce` must continue disabling decorative loops and minimizing transitions inside the landing namespace.
 
+## Landing Budget Dashboard Mockup Repair - 2026-06-24
+
+Landing mockup visual rules:
+
+- The Budget dashboard landing showcase mockup must look like intentional FinanceOS UI, not decorative placeholder geometry.
+- Use editable React/CSS/SVG elements for dashboard preview content whenever possible: cash-flow chart, budget mix, category bars, small labels, and finance summary chips.
+- Keep the dark premium fintech style, glassy surfaces, muted grid lines, rounded cards, and lime as an accent only.
+- Avoid plain empty rectangles, random decorative blocks, or visual elements that do not represent financial UI.
+
+Removed black rectangle animation:
+
+- The old monitor-stand/black rectangle was removed from the Budget dashboard showcase.
+- Do not reintroduce floating black blocks under or over the showcase chart area.
+
+New dashboard preview elements:
+
+- Cash-flow card with line chart, area fill, month markers, dots, and legend labels for Income, Expenses, and Amount left.
+- Budget mix card with donut chart and values for Needs, Savings, and Debt.
+- Category plan card with Housing, Food, Savings, and Debt progress bars.
+- Subtle floating mini cards for amount left and upcoming bills.
+- Animations are limited to line draw, bar fill, donut pulse, and small card float; respect reduced-motion rules through the existing landing reduced-motion block.
+
+AI-generated assets:
+
+- No AI-generated visual assets were used. The implementation is React/HTML/CSS/SVG only.
+
+Files changed:
+
+- `src/app/components/screens/LandingPage.tsx`
+- `src/styles/landing.css`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `git diff --check` passes.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- Static review confirms only landing showcase mockup code/styles were changed for this visual repair and no actual app dashboard components were changed.
+
+## Preview Expected Transactions And Month Dropdown Scroll - 2026-06-24
+
+Expected Transactions mock data rule:
+
+- Developer Preview Mode must provide mock expected monthly values through `mockFinanceData.expectedAmounts`.
+- Preview expected transaction values are `income: 4200`, `expenses: 1850`, `savings: 650`, and `debt: 475`, for a dashboard Expected Transactions total of `7175`.
+- Dashboard cards, reports, and charts that already read `expectedAmounts` should receive these preview values automatically while preview mode is enabled.
+
+Preview Mode data isolation rule:
+
+- Preview expected amounts are applied only in `withPreviewData()` read state.
+- Preview expected amounts must not be written to localStorage as real user data.
+- Turning Preview Mode off must return the app to the persisted real user expected amounts.
+
+Dropdown viewport/scroll behavior rule:
+
+- Shared MonthSelector dropdowns, including Dashboard Month and top Planning Period, must keep the existing trigger position and visual model while the opened panel stays inside the viewport.
+- Month selector popovers render through a portal with fixed positioning anchored to the trigger `getBoundingClientRect()`, viewport-measured `maxHeight`, `overflow-y: auto`, and `overscroll-behavior: contain`.
+- The trigger/button position must remain unchanged; only the opened panel may be repositioned or clamped.
+- Dropdown z-index must keep the menu above cards/content, and all 12 months must remain reachable on desktop, tablet, and mobile.
+- Do not move Planning Period or change header order to fix dropdown overflow.
+
+Files changed:
+
+- `src/mock/mockFinanceData.ts`
+- `src/app/lib/financeStore.tsx`
+- `src/app/components/common/MonthSelector.tsx`
+- `src/styles/theme.css`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `git diff --check` passes.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- Static review confirms Preview Mode overlays mock expected amounts in read state without saving them as real user data.
+- Static review confirms MonthSelector keeps the existing design while adding viewport max-height and internal scrolling.
+
+## Categories Hover And Header Alignment Repair - 2026-06-24
+
+Category hover style rule:
+
+- Categories page rows use `.financeos-category-row` for section-specific hover styling.
+- Dark Mode category row hover uses `#1C1F26` with a subtle `rgb(198 255 0 / 0.18)` border.
+- Dark Mode category hover text must remain readable: primary text `#F8FAFC`, secondary/action icon text `#CBD5E1`, and destructive icons `#F87171`.
+- Light Mode keeps the existing subtle `hover:bg-slate-50` behavior unless a separate light-mode readability issue is found.
+- Do not reuse global table hover fixes for Categories cards; keep category hover behavior scoped to Categories rows.
+
+Header control alignment rule:
+
+- Top taskbar controls must share the same vertical centerline with `align-items: center` on control groups.
+- Planning Period must stay in its current order and location; do not move it relative to Month/Year, date/time, notifications, settings, profile, or menu controls.
+- Header order preservation is required: brand/page info, Planning Period, date/time, notifications, settings, profile, menu.
+- Header pill/icon control height standard is `h-11` / `44px`; compact taskbar controls use no vertical padding drift (`py-0`) and centered flex layout.
+- Avoid margin-top, translateY, or relative top offsets for header alignment unless there is no structural alternative.
+
+Files changed:
+
+- `src/app/components/screens/Categories.tsx`
+- `src/app/components/layout/TopNav.tsx`
+- `src/app/components/common/MonthSelector.tsx`
+- `src/app/components/common/DateTimeDisplay.tsx`
+- `src/app/components/layout/MenuDropdown.tsx`
+- `src/styles/theme.css`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `git diff --check` passes.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- Static review confirms no landing page files were changed.
+- Static review confirms the top taskbar DOM/control order was preserved while control heights and center alignment were normalized.
+
+## Landing Button Readability Repair - 2026-06-23
+
+Landing button contrast rules:
+
+- Landing CTAs must use the landing-only `LandingButton` component with `.financeos-landing-button-*` and `.landing-btn-*` classes.
+- Primary lime buttons use `#C6FF00` at rest and `#B7FF00` on hover with dark text only: `#071006` or `#050505`.
+- Dark and secondary buttons use `#050505`/`#0B0B0C` backgrounds, off-white/white text, and `rgba(255,255,255,0.16)` or stronger hover borders.
+- Outline/ghost buttons on dark landing sections use `rgba(255,255,255,0.04)` backgrounds, `#F8FAFC` text, and `rgba(255,255,255,0.16)` borders.
+- Outline/ghost buttons in any light/lime landing context use `rgba(0,0,0,0.06)` backgrounds, `#050505` text, and `rgba(0,0,0,0.18)` borders.
+- Button child text and icons inherit `currentColor`; do not style button children with lime/neon text on lime backgrounds.
+- Keep these rules scoped under `.financeos-landing` so dashboard app buttons and Light/Dark Mode remain unaffected.
+
+Files changed:
+
+- `src/app/components/screens/LandingPage.tsx`
+- `src/styles/landing.css`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`.
+- Static CSS validation confirms `src/styles/landing.css` has balanced braces.
+- Static review confirms all landing button variants keep readable text colors at rest and hover, with no neon text on lime buttons and no dark text on dark buttons.
+
+## Landing Typography and Contrast Repair - 2026-06-23
+
+Landing typography scale:
+
+- Hero headline uses `font-size: clamp(4rem, 7vw, 7.5rem)`, `line-height: 0.9`, and a real max width of `760px` so it stays editorial without colliding with the dashboard mockup.
+- Mobile hero headline uses `font-size: clamp(3.15rem, 13vw, 4.45rem)` with `line-height: 0.92`.
+- Landing section headings use `font-size: clamp(2.25rem, 4.2vw, 4.7rem)` with more relaxed line height and reduced visual weight.
+- Eyebrow/badge text is small, uppercase, semi-bold, and letter-spaced; supporting copy stays muted, shorter, and limited to readable line lengths.
+
+Landing button contrast rules:
+
+- All landing CTAs use the landing-only `LandingButton` component and `.financeos-landing-button-*` classes.
+- Primary CTAs use lime `#C6FF00`/deep lime hover with dark text `#071006` and `font-weight: 700`.
+- Secondary and dark CTAs use `#050505` with white text and a subtle light border.
+- Outline CTAs use transparent dark-section styling with white text and a visible border.
+- Button child spans and SVG icons inherit the explicit button color so hover and section backgrounds cannot make button text unreadable.
+
+Hero layout rules:
+
+- The hero remains a two-column layout on desktop: text on the left, dashboard animation/mockup on the right.
+- Desktop hero spacing uses a larger grid gap, separate z-index layers, and constrained text/mockup widths so text and animation do not overlap.
+- At tablet/mobile widths, the hero stacks into one column with text above the mockup.
+- The landing page remains a fixed dark/lime theme and must not depend on app Light/Dark Mode or app dashboard theme variables.
+
+Files changed:
+
+- `src/app/components/screens/LandingPage.tsx`
+- `src/styles/landing.css`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- Static CSS validation confirms `src/styles/landing.css` has balanced braces.
+- Static review confirms the changes are scoped to landing page component/styles and do not reference app theme variables, `data-theme`, app Light/Dark Mode classes, or dashboard page components.
+
 Animation timing values:
 
 - Hero 3D card stack parallax: `6s` with `cubic-bezier(0.22, 1, 0.36, 1)`.
@@ -1964,3 +2253,380 @@ Testing results:
 - `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
 - `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`.
 - Static review confirms `src/styles/index.css` imports `landing.css`, `/` renders `LandingPage`, the FinanceOS app-header logo routes to `/`, the landing wrapper/class names match the repaired CSS, and `landing.css` no longer contains `@layer components`.
+
+## Budget Health Score - 2026-06-24
+
+Formula:
+
+- Budget Health Score is calculated by `calculateBudgetHealthScore()` in `src/app/lib/budgetHealthScore.ts`.
+- Final score is clamped from `0` to `100`.
+- Weighted factors:
+  - Savings performance: `30%` from actual savings vs expected savings.
+  - Expense control: `30%` from actual expenses vs expected expenses, with full credit at or below expected and decreasing credit when over expected.
+  - Cash flow health: `25%` from actual amount left and actual amount left compared with expected amount left.
+  - Debt progress: `15%` from actual debt payments vs expected debt payments.
+- Amount left is always `income - expenses - savings - debt`.
+- Missing, zero, `NaN`, or infinite values are normalized safely before scoring.
+
+Data sources used:
+
+- The Savings/Tracker screen reads `actualAmounts`, `expectedAmounts`, `selectedMonth`, `activeYear`, and `previewModeEnabled` from `useFinanceData()`.
+- The Budget Health Score uses the selected month values, not the calendar current month.
+- Actual values come from transactions derived by `deriveActualAmounts()`.
+- Expected values come from monthly expected plans in `expectedAmounts`.
+- The score reacts to selected month changes because both selected actual and expected monthly inputs are recalculated from `selectedMonth`.
+- Real user data reacts to selected year changes because `actualAmounts` are derived from the active year and expected amounts come from the active finance state.
+
+Preview Mode behavior:
+
+- Preview Mode uses a separate in-memory finance state created by `createPreviewState()`.
+- Preview actual values come from `mockFinanceData.transactions`.
+- Preview expected values come from `mockFinanceData.expectedAmounts`.
+- Preview edits to transactions, expected monthly plans, payment plans, categories, and saved snapshots dispatch to the preview reducer only.
+- Switching Preview Mode on/off immediately changes `useFinanceData()` between preview state and real state, which updates the Budget Health Score inputs.
+- The Budget Health Score card shows a compact Preview Mode breakdown with actual savings, expected savings, actual expenses, expected expenses, actual debt payments, expected debt payments, and final score.
+
+Mock data isolation rule:
+
+- Do not merge Preview Mode mock transactions or expected amounts into real user state.
+- Do not write preview reducer state to `financeos:app-data:v1`.
+- Only the Preview Mode enabled flag may be written to `financeos:dev-preview-enabled`.
+- Mock data must remain isolated from real user data and localStorage persistence.
+
+Files changed:
+
+- `src/app/lib/budgetHealthScore.ts`
+- `src/app/lib/financeStore.tsx`
+- `src/app/components/screens/TrackerUI.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`.
+- Static code review confirms Preview Mode has mock expected transactions, the score reads mock actual and expected values while Preview Mode is enabled, selected month changes alter the score inputs, and preview state is not persisted to real app localStorage.
+
+## Savings Tracker UI Audit - 2026-06-24
+
+Savings tracker data source rules:
+
+- The Savings section is implemented in `src/app/components/screens/TrackerUI.tsx`.
+- All Savings tracker UI reads through `useFinanceData()` only.
+- Real mode uses real `transactions`, `actualAmounts`, `expectedAmounts`, `categories`, `selectedMonth`, and `activeYear`.
+- Preview Mode uses the isolated preview reducer state from `financeStore.tsx`.
+- Do not read directly from `mockFinanceData` inside the UI. Mock data must enter through the same finance data context path as real data.
+- Month-sensitive cards, progress bars, summaries, and charts must use `selectedMonth`.
+- Year-sensitive transaction grouping must filter by `activeYear`.
+- YTD cards and savings trend data include months from January through `selectedMonth`.
+
+Actual vs expected savings rules:
+
+- Actual savings comes from savings transactions included in `deriveActualAmounts()`.
+- Expected savings comes from the selected month or YTD slice of `expectedAmounts`.
+- Missing expected savings is treated as `0`; the UI must show `No target set` or a clean empty state instead of dividing by zero.
+- Actual greater than expected shows positive progress and an `Ahead` status.
+- Actual equal to expected shows `On track`.
+- Actual below expected shows `Behind` warning styling.
+- Progress bar widths are clamped from `0%` to `100%`; displayed percentages may exceed `100%` to show over-goal performance.
+- Money values use USD currency formatting through the tracker utility formatter.
+- Percent values are sanitized so `NaN`, `Infinity`, `undefined`, and `null` do not appear.
+
+Budget Health Score behavior:
+
+- Budget Health Score continues to use `calculateBudgetHealthScore()`.
+- Inputs are selected-month actual and expected income, expenses, savings, and debt payments.
+- The score recalculates when selected month, active year, real data, preview data, or Preview Mode state changes.
+- In Preview Mode, the score card shows a compact developer breakdown of actual savings, expected savings, actual expenses, expected expenses, actual debt, expected debt, and final score.
+
+Preview Mode Savings mock behavior:
+
+- Preview expected savings now varies by month using `expectedSavingsByMonth`.
+- Preview actual savings already varies by month through individual mock savings transactions for Emergency Fund, House Fund, Investment Contributions, and Vacation Fund.
+- Preview savings trend, goal cards, selected-month summary, progress bars, and Budget Health Score use mock values only while Preview Mode is enabled.
+- Preview year changes update preview state. If the selected preview year has no matching mock transactions, actual savings safely falls to `0` while expected plans remain readable.
+- Preview reducer state is in memory only and is not saved to `financeos:app-data:v1`.
+- Only the Preview Mode toggle flag is saved to `financeos:dev-preview-enabled`.
+
+Savings tracker UI behavior:
+
+- Added safe status handling for tracker cards: `Ahead`, `On track`, `Behind`, `Under target`, `Over target`, `No target set`, and `No data`.
+- Added selected-period Savings trend chart inside the Savings section using actual vs expected savings.
+- Added selected-month savings summary with actual, expected, clamped progress bar, percent, and status.
+- Added savings goal progress cards derived from savings categories and YTD savings transactions.
+- Added responsive grid classes so tracker cards stack on mobile and do not overflow.
+- Updated dark/light readability to use FinanceOS theme variables for headings, muted text, borders, surfaces, and status treatments.
+
+Files changed:
+
+- `src/app/components/screens/TrackerUI.tsx`
+- `src/mock/mockFinanceData.ts`
+- `src/app/lib/financeStore.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`; browser-based dark mode, light mode, and mobile checks could not be completed here.
+- Static code review confirms Savings tracker cards, chart, monthly summary, goal cards, and Budget Health Score read selected month/year and Preview Mode state from `useFinanceData()`.
+- Static code review confirms progress widths are clamped, zero expected savings avoids division by zero, and empty savings data has clean empty states.
+
+## Dashboard Collapsible Sticky Header - 2026-06-26
+
+Collapsible sticky header behavior:
+
+- The Dashboard collapsible sticky hero is implemented in `src/app/components/screens/Dashboard.tsx`.
+- The top taskbar/header order must remain unchanged: `TopNav` stays above the Dashboard hero.
+- The Dashboard hero remains sticky with a stable `top-[4.25rem]` offset so it does not fight the top taskbar.
+- The KPI card visual style must remain unchanged.
+- The sticky hero element itself uses a stable reserved expanded height to prevent the following dashboard content from jumping when KPI cards collapse.
+- KPI cards collapse visually with opacity and transform changes while the stable sticky hero height prevents document-flow height churn.
+
+Scroll threshold values:
+
+- Collapse threshold: `DASHBOARD_HERO_COLLAPSE_Y = 160`.
+- Expand threshold: `DASHBOARD_HERO_EXPAND_Y = 120`.
+
+Hysteresis rule:
+
+- When expanded, collapse only after `scrollY > 160`.
+- When collapsed, expand only after `scrollY <= 120`.
+- Do not use a single shared threshold for both directions; that causes flicker around the boundary.
+
+Performance rule for scroll listeners:
+
+- Scroll listeners must be passive: `{ passive: true }`.
+- Do not call `setState` on every scroll event.
+- Use `requestAnimationFrame` to coalesce scroll updates.
+- Track the collapsed state in a ref and only call React state setters when the collapsed value actually changes.
+- Clean up both the scroll listener and any pending animation frame on unmount.
+- Do not perform repeated DOM measurement such as `getBoundingClientRect()` inside scroll events unless it is batched in `requestAnimationFrame` and genuinely required.
+
+Animation and layout rule:
+
+- Prefer `transform` and `opacity` for scroll-linked visual changes.
+- Avoid changing document-flow height at the scroll threshold.
+- Use `transform-gpu`, `will-change`, and reduced-motion-safe transition classes on animated sticky hero elements.
+- Keep parent containers free of overflow, transforms, filters, or containment rules that would break `position: sticky`.
+
+Files changed:
+
+- `src/app/components/screens/Dashboard.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`; live desktop, iPhone, tablet, Light Mode, and Dark Mode scroll testing could not be completed here.
+- Static code review confirms the scroll listener is passive, rAF-coalesced, hysteresis-based, and cleaned up on unmount.
+- Static code review confirms the Dashboard hero now reserves stable space and no longer toggles collapse state on every scroll pixel.
+
+## Dashboard Mobile KPI Row - 2026-06-26
+
+Mobile KPI row behavior:
+
+- On iPhone/mobile widths below the `sm` breakpoint, Dashboard hero KPI cards render as a horizontal swipe row.
+- KPI order remains unchanged: Income, Savings, Debt, Expenses, Amount Left.
+- Expected Transactions remains the next Dashboard KPI card below the sticky hero and remains vertically reachable.
+- On `sm` and larger viewports, the existing Dashboard KPI grid behavior remains in place.
+- Do not change the sticky header hysteresis values or scroll listener behavior when adjusting KPI row layout.
+
+KPI card mobile width rule:
+
+- Mobile KPI cards use `width: clamp(220px, 78vw, 300px)`.
+- Cards must use `shrink-0` / `flex: 0 0 auto` behavior so they do not squeeze into unreadable mobile columns.
+- Desktop and tablet cards use normal grid sizing.
+
+Horizontal scroll/snap rule:
+
+- Mobile KPI row uses horizontal overflow with scroll snapping.
+- Required row behavior:
+  - `overflow-x: auto`
+  - `overflow-y: hidden`
+  - `scroll-snap-type: x mandatory`
+  - `-webkit-overflow-scrolling: touch`
+  - `overscroll-x-contain`
+- Each KPI card wrapper uses `scroll-snap-align: start`.
+- The row keeps inline padding so the first and last KPI cards are fully reachable and not clipped on iPhone widths.
+
+Sticky header mobile accessibility rule:
+
+- Keep the sticky hero's vertical collapse animation independent from horizontal KPI scrolling.
+- Do not animate KPI card width during scroll.
+- Do not force all KPI cards into one tiny mobile grid row.
+- If a sticky hero panel uses `overflow: hidden` for collapse clipping, the inner KPI row must still be horizontally scrollable inside the visible panel area.
+
+Files changed:
+
+- `src/app/components/screens/Dashboard.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`; live iPhone widths `375px`, `390px`, `414px`, mobile Safari, desktop, tablet, Light Mode, and Dark Mode testing could not be completed here.
+- Static code review confirms mobile KPI cards have snap alignment, fixed readable mobile widths, horizontal touch scrolling, and left/right padding so the last KPI card remains reachable.
+- Static code review confirms existing collapse/expand hysteresis and rAF scroll handling were not changed for this mobile KPI fix.
+
+## Reports Monthly Filtering Revert - 2026-06-27
+
+Reverted behavior:
+
+- The Reports monthly filtering/chart update from 2026-06-27 was reverted.
+- Reports returned to the previous annual/overall behavior.
+- The Reports page again shows annual financial insights and summaries for `activeYear`.
+- Report charts again use 12-month annual datasets from `actualAmounts` and `expectedAmounts`.
+- Expense category breakdown again uses all active-year report transactions from `useFinanceData()`.
+- The temporary Monthly/Annual report mode toggle, monthly report labels, monthly empty states, and monthly health score KPI were removed.
+
+Files changed:
+
+- `src/app/components/screens/Reports.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- Static code review confirms `Reports.tsx` no longer imports `useState` or `calculateBudgetHealthScore`, no longer defines monthly report mode, and again maps charts over `MONTH_SHORT` / `MONTHS` for annual report behavior.
+
+## Reports Category Breakdown Pie Chart - 2026-06-27
+
+Default 2D style rule:
+
+- The Reports Category Breakdown donut chart should rest as a flat, modern 2D chart.
+- Do not apply default slice extrusion, per-slice offsets, fake depth layers, heavy full-chart shadows, or permanent bevel/highlight overlays.
+- Use subtle slice separation through clean strokes/gaps that remain readable in Light Mode and Dark Mode.
+- Keep existing chart data, center value display, labels, legend/list behavior, and empty state behavior.
+
+Hover pop interaction rule:
+
+- Only the active hovered or focused slice should subtly pop.
+- Use a radial offset from the slice midpoint so the active slice moves outward from the donut center.
+- Do not use scale-only, translateX-only, or translateY-only hover motion for pie slices; those can push the active slice awkwardly into neighboring slices.
+- Keep the active slice at its original size unless there is a specific reason to increase radius.
+- Use a soft hover-only drop shadow on the active slice.
+- Keep hover transitions short and smooth around `180ms`.
+- Respect `prefers-reduced-motion: reduce` by removing transform animation while preserving focus/hover readability through stroke changes.
+- SVG overflow must remain visible so the hover pop is not clipped.
+
+Pie chart label overflow update reverted:
+
+- The 2026-06-27 label overflow/truncation update was reverted.
+- Do not use the removed `formatPieLabel` truncation/hiding behavior unless the label design is revisited intentionally.
+- The chart labels returned to the prior percentage-only slice labels shown for slices at or above `5%`.
+- The center hover label returned to the full category name display.
+- Legend buttons returned to their prior behavior without extra title attributes from the reverted label experiment.
+
+Files changed:
+
+- `src/app/components/charts/ElevatedExpenseDonutChart.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`; live hover checks in desktop, tablet, mobile, Light Mode, and Dark Mode could not be completed here.
+- Static review confirms default chart depth layers and always-on shadows were removed, while hover/focus still updates the center value, tooltip-like readout, and legend hover behavior.
+- 2026-06-27 follow-up: hover motion now uses a 9px radial active-slice offset from the slice midpoint instead of scale or fixed vertical translation, preventing the active slice from expanding into the slice to its right.
+- 2026-06-27 follow-up: the later label overflow/truncation update was reverted; slice labels are back to the prior percentage-only display for slices at or above `5%`, while the flat 2D style and radial hover pop remain.
+
+## Actual vs Expected Bar Chart Colors - 2026-06-27
+
+Actual vs Expected chart color rule:
+
+- Actual vs Expected bar charts must use shared flat fintech colors from `src/app/components/charts/chartTheme.ts`.
+- `Actual` bars use `ACTUAL_COLOR = "#3B82F6"` and `ACTUAL_HOVER_COLOR = "#2563EB"`.
+- `Expected` bars use `EXPECTED_COLOR = "#94A3B8"` and `EXPECTED_HOVER_COLOR = "#64748B"`.
+- Legends and tooltips must label the series as `Actual` and `Expected`.
+
+Non-gradient bar rule:
+
+- Do not use SVG `linearGradient` fills for Actual vs Expected bars.
+- Do not use category/KPI colors such as income green or dashboard purple for Expected bars.
+- Hover/active bars stay flat and use the matching hover constants.
+
+Dashboard and Reports consistency rule:
+
+- Dashboard `Expected vs Actual Preview` and Reports `Expected vs Actual Income` must import and use the same Actual/Expected constants.
+- Do not change unrelated pie charts, KPI colors, category colors, or non-bar trend lines when adjusting Actual vs Expected bar colors.
+
+Files changed:
+
+- `src/app/components/charts/chartTheme.ts`
+- `src/app/components/screens/Dashboard.tsx`
+- `src/app/components/screens/Reports.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- Static review confirms Dashboard and Reports Actual vs Expected bar charts use the shared constants, no longer define Actual/Expected bar gradients, and show `Actual` / `Expected` series names in legends and tooltips.
+
+## Archived Budget Annual PDF Export - 2026-06-27
+
+Archived Budget annual PDF export behavior:
+
+- Annual archive summaries in `Archived Budgets` include a `Download Annual Report PDF` button.
+- The button generates the report from the selected `SavedYearlyBudget.summary_json` archive snapshot only.
+- Do not mix live dashboard, current Reports, or current transaction state into a downloaded archived annual report.
+- The button shows `Generating PDF...` while building the file, disables repeat clicks, shows `Annual report PDF downloaded.` on success, and shows `Could not generate PDF. Please try again.` on failure.
+- Missing archived details render as `Not available` instead of `NaN`, `undefined`, `null`, or crashing.
+
+Annual PDF report data structure:
+
+- `year`
+- `generatedAt`
+- `profileName`
+- `annualTotals`
+- `actualVsExpected`
+- `monthlyBreakdown`
+- `categoryBreakdown`
+- `highlights`
+- `notes`
+- Current annual archive snapshots do not store full debt accounts, detailed savings goals, or individual transaction rows; those sections must use clean archived summary values or `Not available` fallbacks until the archive schema expands.
+
+PDF fintech statement template rules:
+
+- Use a clean US Letter statement layout with a white/light background, charcoal text, blue accents, subtle grey borders, alternating table rows, section dividers, and readable spacing.
+- Do not use browser print output, screenshots of app pages, dark app backgrounds, heavy gradients, or clipped chart screenshots.
+- Every page footer includes FinanceOS, report year, generated date, and page number.
+- Tables must truncate long text safely inside cells and keep money/percent values consistently formatted.
+
+Actual blue / Expected grey PDF color rule:
+
+- Actual indicators use `#3B82F6`.
+- Expected indicators use `#94A3B8`.
+- Actual vs Expected PDF indicators must remain flat and non-gradient.
+
+File naming rule:
+
+- Annual PDF downloads use `FinanceOS-Annual-Report-{year}.pdf`.
+- Future Supabase export storage path can use `exports/{user_id}/{year}/FinanceOS-Annual-Report-{year}.pdf`.
+
+Files changed:
+
+- `src/app/services/generateAnnualReportPdf.ts`
+- `src/app/components/screens/SavedBudgets.tsx`
+- `guidelines.md`
+
+Testing results:
+
+- `npm run build` passes. Vite still reports the existing large chunk warning only.
+- `git diff --check` passes.
+- `npm run lint` fails because no `lint` script is configured in `package.json`.
+- `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
+- `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`; live PDF download/open checks, desktop/mobile download behavior, and Light/Dark Mode browser checks could not be completed here.
+- Static review confirms annual PDF generation reads `SavedYearlyBudget.summary_json`, uses archived annual totals/monthly breakdown/category rankings/highlights/notes, downloads a named PDF file, and does not save generated PDF metadata to localStorage.

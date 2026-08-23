@@ -29,17 +29,17 @@ export const mockCategories: Category[] = [
   { id: "mock-cat-card", name: "Credit Card", type: "debt", color: "#FBBF24", icon: "C" },
 ];
 
-const incomePlan = [6100, 5850, 6400, 6150, 6500, 6250, 6700, 6350, 6600, 6900, 6750, 7200];
-const expensePlan = [3450, 3220, 3380, 3510, 3675, 3580, 3820, 3710, 3490, 3630, 3890, 4050];
-const savingsPlan = [950, 850, 1100, 1000, 1250, 1150, 1300, 1200, 1350, 1450, 1400, 1550];
-const debtPlan = [620, 540, 580, 600, 520, 560, 500, 480, 460, 440, 420, 390];
+const expectedIncomeByMonth = [6400, 6450, 6500, 6550, 6600, 6650, 6725, 6780, 6825, 6900, 7000, 7150];
+const expectedExpensesByMonth = [3650, 3550, 3625, 3700, 3825, 3750, 3900, 3850, 3725, 3800, 4025, 4250];
+const expectedSavingsByMonth = [500, 550, 650, 700, 775, 825, 900, 875, 800, 850, 950, 1050];
+const expectedDebtByMonth = [520, 500, 490, 480, 470, 460, 450, 440, 425, 410, 390, 375];
 
 export const mockExpectedAmounts: ExpectedAmount[] = MONTHS.map((_, month) => ({
   month,
-  income: incomePlan[month],
-  savings: savingsPlan[month],
-  debt: debtPlan[month],
-  expenses: expensePlan[month],
+  income: expectedIncomeByMonth[month],
+  savings: expectedSavingsByMonth[month],
+  debt: expectedDebtByMonth[month],
+  expenses: expectedExpensesByMonth[month],
 }));
 
 const variableExpenses = [
@@ -71,6 +71,7 @@ function tx(
   type: Transaction["type"],
   category: string,
   notes?: string,
+  status: Transaction["status"] = "paid",
 ): Transaction {
   return {
     id,
@@ -79,7 +80,7 @@ function tx(
     type,
     category,
     date: date(month, day),
-    status: "paid",
+    status,
     expenseKind: type === "expense" ? "variable" : undefined,
     notes,
   };
@@ -98,6 +99,22 @@ MONTHS.forEach((_, month) => {
       ...tx(`mock-expense-${name.toLowerCase().replaceAll(" ", "-")}-${month}`, month, day, name, amount + (name === "Utilities" ? (month % 5) * 18 : 0), "expense", name, "Recurring monthly bill"),
       expenseKind: "fixed",
       dueDate: date(month, day),
+      isFixed: true,
+    });
+    transactions.push({
+      ...tx(
+        `mock-expected-${name.toLowerCase().replaceAll(" ", "-")}-${month}`,
+        month,
+        Math.min(day + 14, 27),
+        `Expected ${name}`,
+        amount + (name === "Utilities" ? (month % 5) * 18 : 0),
+        "expense",
+        name,
+        "Expected monthly transaction",
+        "pending",
+      ),
+      expenseKind: "fixed",
+      dueDate: date(month, Math.min(day + 14, 27)),
       isFixed: true,
     });
   });

@@ -10,3 +10,8 @@ export const chartTooltipStyle = {
   boxShadow: "var(--chart-tooltip-shadow)",
 };
 export const chartTooltipLabelStyle = { color: "var(--chart-axis-text)" };
+
+export const ACTUAL_COLOR = "#3B82F6";
+export const ACTUAL_HOVER_COLOR = "#2563EB";
+export const EXPECTED_COLOR = "#94A3B8";
+export const EXPECTED_HOVER_COLOR = "#64748B";

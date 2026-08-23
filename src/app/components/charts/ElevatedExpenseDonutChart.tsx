@@ -13,7 +13,6 @@ interface PreparedDatum extends ExpenseDonutDatum {
   color: string;
   gradientFrom: string;
   gradientTo: string;
-  elevation: number;
 }
 
 const PALETTE = [
@@ -24,6 +23,10 @@ const PALETTE = [
   { color: "#00d68f", gradientFrom: "#00D68F", gradientTo: "#00C26E" },
   { color: "#64748b", gradientFrom: "#94A3B8", gradientTo: "#64748B" },
 ];
+
+const ACTIVE_SLICE_OFFSET = 9;
+const DONUT_OUTER_RADIUS = 104;
+const DONUT_INNER_RADIUS = 58;
 
 function polarToCartesian(cx: number, cy: number, r: number, angle: number) {
   const radians = ((angle - 90) * Math.PI) / 180;
@@ -85,14 +88,12 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
         const endAngle = cursor + (percentage / 100) * 360;
         cursor = endAngle;
         const palette = PALETTE[index % PALETTE.length];
-        const elevation = percentage >= 45 ? 14 : percentage >= 20 ? 9 : percentage >= 10 ? 6 : 3;
 
         return {
           ...item,
           percentage,
           startAngle,
           endAngle,
-          elevation,
           ...palette,
         };
       });
@@ -128,14 +129,11 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
           <div className="relative mx-auto flex max-w-[26rem] items-center justify-center">
             <svg
               viewBox="0 0 320 320"
-              className="h-auto w-full max-w-[20rem] overflow-visible drop-shadow-2xl sm:max-w-[22rem]"
+              className="h-auto w-full max-w-[20rem] overflow-visible sm:max-w-[22rem]"
               role="img"
               aria-label="Expense category distribution donut chart"
             >
               <defs>
-                <filter id="slice-depth" x="-40%" y="-40%" width="180%" height="180%">
-                  <feDropShadow dx="0" dy="8" stdDeviation="7" floodColor="#050506" floodOpacity="0.42" />
-                </filter>
                 {prepared.map((item) => (
                   <linearGradient key={item.category} id={`gradient-${item.category.replace(/\W/g, "-")}`} x1="0%" x2="100%" y1="0%" y2="100%">
                     <stop offset="0%" stopColor={item.gradientFrom} />
@@ -148,21 +146,19 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
 
               {prepared.map((item) => {
                 const isHovered = item.category === hoveredCategory;
-                const isLargest = item.category === prepared[0].category;
-                const offset = getOffset(item.startAngle, item.endAngle, item.elevation + (isHovered ? 6 : 0));
-                const labelOffset = getOffset(item.startAngle, item.endAngle, 124 + item.elevation);
-                const path = createDonutSlicePath(160, 160, 104, 58, item.startAngle, item.endAngle);
+                const offset = getOffset(item.startAngle, item.endAngle, isHovered ? ACTIVE_SLICE_OFFSET : 0);
+                const labelOffset = getOffset(item.startAngle, item.endAngle, 124);
+                const path = createDonutSlicePath(160, 160, DONUT_OUTER_RADIUS, DONUT_INNER_RADIUS, item.startAngle, item.endAngle);
                 const gradientId = `gradient-${item.category.replace(/\W/g, "-")}`;
 
                 return (
                   <g
                     key={item.category}
-                    className="cursor-pointer outline-none"
+                    className="financeos-donut-slice cursor-pointer outline-none"
                     tabIndex={0}
                     style={{
-                      transform: `translate(${offset.x}px, ${offset.y}px) scale(${isHovered ? 1.035 : 1})`,
+                      transform: `translate(${offset.x}px, ${offset.y}px)`,
                       transformOrigin: "160px 160px",
-                      transition: "transform 220ms ease, opacity 220ms ease",
                     }}
                     onMouseEnter={() => setHoveredCategory(item.category)}
                     onMouseLeave={() => setHoveredCategory(null)}
@@ -170,15 +166,17 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
                     onBlur={() => setHoveredCategory(null)}
                     aria-label={`${item.category}: ${formatCurrency(item.amount)}, ${item.percentage.toFixed(1)} percent`}
                   >
-                    <path d={path} fill={`url(#${gradientId})`} opacity="0.28" transform="translate(0 12)" />
                     <path
                       d={path}
                       fill={`url(#${gradientId})`}
-                      filter="url(#slice-depth)"
-                      stroke={isLargest ? "rgba(255,255,255,0.38)" : "rgba(255,255,255,0.22)"}
-                      strokeWidth={isHovered || isLargest ? 2 : 1}
+                      stroke="var(--financeos-surface)"
+                      strokeLinejoin="round"
+                      strokeWidth={isHovered ? 4 : 3}
+                      style={{
+                        filter: isHovered ? "drop-shadow(0 10px 18px rgba(0, 0, 0, 0.22))" : "none",
+                        transition: "filter 180ms ease, stroke-width 180ms ease",
+                      }}
                     />
-                    <path d={path} fill="rgba(255,255,255,0.18)" transform="translate(-3 -5) scale(0.985)" style={{ transformOrigin: "160px 160px" }} />
                     {item.percentage >= 5 && (
                       <text
                         x={160 + labelOffset.x}
@@ -194,6 +192,28 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
                   </g>
                 );
               })}
+
+              <style>
+                {`
+                  .financeos-donut-slice {
+                    transition: transform 180ms ease;
+                    will-change: transform;
+                    backface-visibility: hidden;
+                    transform-box: fill-box;
+                  }
+
+                  @media (prefers-reduced-motion: reduce) {
+                    .financeos-donut-slice {
+                      transition: none !important;
+                      transform: none !important;
+                    }
+
+                    .financeos-donut-slice path {
+                      transition: none !important;
+                    }
+                  }
+                `}
+              </style>
 
               <circle cx="160" cy="160" r="51" fill="var(--financeos-surface)" stroke="var(--financeos-border)" strokeWidth="1" />
               <text x="160" y="150" textAnchor="middle" className="fill-[var(--financeos-text-muted)] text-[10px] uppercase tracking-[0.18em]">

@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -30,11 +30,15 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
+  ACTUAL_COLOR,
+  ACTUAL_HOVER_COLOR,
   chartAxisTick,
   chartGridStroke,
   chartLegendStyle,
   chartTooltipLabelStyle,
   chartTooltipStyle,
+  EXPECTED_COLOR,
+  EXPECTED_HOVER_COLOR,
 } from "../charts/chartTheme";
 import {
   getAmountLeft,
@@ -46,6 +50,9 @@ import { useFinanceData } from "../../lib/financeStore";
 import { MONTHS, MONTH_SHORT, currentMonthIndex } from "../../lib/constants";
 import { MonthSelector } from "../common/MonthSelector";
 import { DateTimeDisplay } from "../common/DateTimeDisplay";
+
+const DASHBOARD_HERO_COLLAPSE_Y = 160;
+const DASHBOARD_HERO_EXPAND_Y = 120;
 
 function pct(actual: number, expected: number) {
   if (!expected) return 0;
@@ -319,16 +326,6 @@ function ChartCard({ chartData, hasChartData }: { chartData: Array<{ month: stri
         <div className="h-[260px] w-full sm:h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barSize={20} barGap={6} barCategoryGap="22%" margin={{ top: 12, right: 8, left: 0, bottom: 6 }}>
-            <defs>
-              <linearGradient id="dashboardExpectedGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#8B5CF6" />
-                <stop offset="100%" stopColor="#6366F1" />
-              </linearGradient>
-              <linearGradient id="dashboardActualGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#3B82F6" />
-                <stop offset="100%" stopColor="#2563EB" />
-              </linearGradient>
-            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
             <XAxis dataKey="month" tick={chartAxisTick} axisLine={false} tickLine={false} />
             <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} width={44} />
@@ -336,11 +333,11 @@ function ChartCard({ chartData, hasChartData }: { chartData: Array<{ month: stri
               cursor={{ fill: "rgba(255,255,255,0.06)" }}
               contentStyle={chartTooltipStyle}
               labelStyle={chartTooltipLabelStyle}
-              formatter={(v: number) => [`$${v}`, ""]}
+              formatter={(v: number, name: string) => [`$${v}`, name]}
             />
             <Legend iconType="circle" iconSize={9} wrapperStyle={chartLegendStyle} />
-            <Bar dataKey="Expected" fill="url(#dashboardExpectedGradient)" radius={[8, 8, 2, 2]} />
-            <Bar dataKey="Actual" fill="url(#dashboardActualGradient)" radius={[8, 8, 2, 2]} />
+            <Bar dataKey="Expected" fill={EXPECTED_COLOR} activeBar={{ fill: EXPECTED_HOVER_COLOR }} radius={[8, 8, 2, 2]} />
+            <Bar dataKey="Actual" fill={ACTUAL_COLOR} activeBar={{ fill: ACTUAL_HOVER_COLOR }} radius={[8, 8, 2, 2]} />
           </BarChart>
         </ResponsiveContainer>
         </div>
@@ -433,68 +430,83 @@ function DashboardHero({
   const amountLeft = getAmountLeft(currentActual);
 
   return (
-    <section
-      className={[
-        "sticky top-[4.25rem] z-30 overflow-hidden rounded-[24px] border border-[var(--financeos-border)] bg-[var(--financeos-surface)] shadow-[var(--financeos-shadow-card-hover)] backdrop-blur-xl transition-all duration-300",
-        collapsed ? "py-3" : "py-5 sm:py-6",
-      ].join(" ")}
-    >
-      <div className="px-4 sm:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <DateTimeDisplay timezone={timezone} className={collapsed ? "mb-2" : "mb-3"} />
-            <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
-              <h1 className={collapsed ? "text-xl font-semibold text-[var(--financeos-text-primary)] sm:text-2xl" : "text-3xl font-semibold text-[var(--financeos-text-primary)] sm:text-5xl"}>
-                FinanceOS
-              </h1>
-              <p className={collapsed ? "text-sm text-slate-400" : "pb-1 text-sm text-slate-400 sm:text-base"}>
-                {MONTHS[selectedMonth]} {activeYear} executive budget view
-              </p>
+    <section className="sticky top-[4.25rem] z-30 min-h-[31rem] sm:min-h-[26rem] lg:min-h-[19.5rem]">
+      <div
+        className={[
+          "overflow-hidden rounded-[24px] border border-[var(--financeos-border)] bg-[var(--financeos-surface)] shadow-[var(--financeos-shadow-card-hover)] backdrop-blur-xl transition-[max-height,box-shadow] duration-300 ease-out motion-reduce:transition-none",
+          "backface-hidden transform-gpu will-change-[max-height]",
+          collapsed ? "max-h-[15rem] sm:max-h-[12.5rem]" : "max-h-[31rem] sm:max-h-[26rem] lg:max-h-[19.5rem]",
+        ].join(" ")}
+      >
+        <div className="px-4 py-4 sm:px-6 sm:py-5">
+          <div
+            className={[
+              "flex flex-col gap-3 transition-transform duration-300 ease-out motion-reduce:transition-none sm:flex-row sm:items-center sm:justify-between",
+              "backface-hidden transform-gpu will-change-transform",
+            ].join(" ")}
+          >
+            <div className="min-w-0">
+              <DateTimeDisplay timezone={timezone} className="mb-2" />
+              <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+                <h1 className={collapsed ? "text-xl font-semibold text-[var(--financeos-text-primary)] sm:text-2xl" : "text-3xl font-semibold text-[var(--financeos-text-primary)] sm:text-5xl"}>
+                  FinanceOS
+                </h1>
+                <p className={collapsed ? "text-sm text-slate-400" : "pb-1 text-sm text-slate-400 sm:text-base"}>
+                  {MONTHS[selectedMonth]} {activeYear} executive budget view
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-4 py-3 sm:min-w-64">
+              <MonthSelector
+                selectedMonth={selectedMonth}
+                onMonthChange={onMonthChange}
+                months={MONTHS}
+                year={activeYear}
+                onYearChange={onYearChange}
+                currentMonth={currentMonthIndex}
+                label="Dashboard month"
+                className="w-full"
+              />
+              <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs text-slate-500">Amount Left</p>
+                <p className="text-xl font-semibold text-[var(--financeos-text-primary)]">${amountLeft.toLocaleString()}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/add-transaction?type=income"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00D68F] to-[#00C26E] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Income
+                </Link>
+                <Link
+                  to="/add-transaction?type=expense"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#EF4444] to-[#DC2626] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Expense
+                </Link>
+              </div>
+              </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-4 py-3 sm:min-w-64">
-            <MonthSelector
-              selectedMonth={selectedMonth}
-              onMonthChange={onMonthChange}
-              months={MONTHS}
-              year={activeYear}
-              onYearChange={onYearChange}
-              currentMonth={currentMonthIndex}
-              label="Dashboard month"
-              className="w-full"
-            />
-            <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs text-slate-500">Amount Left</p>
-              <p className="text-xl font-semibold text-[var(--financeos-text-primary)]">${amountLeft.toLocaleString()}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link
-                to="/add-transaction?type=income"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00D68F] to-[#00C26E] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
-              >
-                <TrendingUp className="h-4 w-4" />
-                Income
-              </Link>
-              <Link
-                to="/add-transaction?type=expense"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#EF4444] to-[#DC2626] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
-              >
-                <PlusCircle className="h-4 w-4" />
-                Expense
-              </Link>
-            </div>
-            </div>
-          </div>
-        </div>
 
-        <div
-          className={[
-            "grid gap-3 overflow-hidden transition-all duration-300 sm:grid-cols-2 lg:grid-cols-5",
-            collapsed ? "mt-0 max-h-0 opacity-0" : "mt-5 max-h-[32rem] opacity-100",
-          ].join(" ")}
-        >
-          {metricCards.map((metric) => <MetricCard key={metric.label} metric={metric} />)}
+          <div
+            className={[
+              "-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-4 pb-2 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none sm:mx-0 sm:grid sm:overflow-visible sm:px-0 sm:pb-0 sm:grid-cols-2 lg:grid-cols-5",
+              "[-webkit-overflow-scrolling:touch] [scrollbar-width:thin]",
+              "backface-hidden transform-gpu will-change-[opacity,transform]",
+              collapsed ? "pointer-events-none mt-5 -translate-y-2 scale-[0.985] opacity-0" : "mt-5 translate-y-0 scale-100 opacity-100",
+            ].join(" ")}
+            aria-hidden={collapsed}
+          >
+            {metricCards.map((metric) => (
+              <div key={metric.label} className="w-[clamp(220px,78vw,300px)] shrink-0 snap-start sm:w-auto">
+                <MetricCard metric={metric} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -504,6 +516,8 @@ function DashboardHero({
 export function Dashboard() {
   const { activeYear, timezone, selectedMonth, setActiveYear, setSelectedMonth, actualAmounts, expectedAmounts, pendingTransactions } = useFinanceData();
   const [heroCollapsed, setHeroCollapsed] = useState(false);
+  const heroCollapsedRef = useRef(false);
+  const scrollFrameRef = useRef<number | null>(null);
   const currentActual = getMonthlyAmount(actualAmounts, selectedMonth);
   const currentExpected = getMonthlyAmount(expectedAmounts, selectedMonth);
   const metricCards = getMetricCards(currentActual, currentExpected);
@@ -521,13 +535,32 @@ export function Dashboard() {
     .reduce((best, m, i) => getAmountLeft(m) > getAmountLeft(actualAmounts[best]) ? i : best, 0) : null;
 
   useEffect(() => {
-    function handleScroll() {
-      setHeroCollapsed(window.scrollY > 84);
+    function updateCollapsedState() {
+      scrollFrameRef.current = null;
+      const scrollY = window.scrollY || window.pageYOffset;
+      const shouldCollapse = heroCollapsedRef.current
+        ? scrollY > DASHBOARD_HERO_EXPAND_Y
+        : scrollY > DASHBOARD_HERO_COLLAPSE_Y;
+
+      if (shouldCollapse !== heroCollapsedRef.current) {
+        heroCollapsedRef.current = shouldCollapse;
+        setHeroCollapsed(shouldCollapse);
+      }
     }
 
-    handleScroll();
+    function handleScroll() {
+      if (scrollFrameRef.current !== null) return;
+      scrollFrameRef.current = window.requestAnimationFrame(updateCollapsedState);
+    }
+
+    updateCollapsedState();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
   }, []);
 
   return (
