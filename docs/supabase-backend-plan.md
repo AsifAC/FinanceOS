@@ -3,7 +3,7 @@
 ## Project
 
 - Supabase URL: https://zmbyqstmgtdbyvczuvki.supabase.co
-- Backend rebuild status: profiles and user_preferences migration created locally; not applied live
+- Backend rebuild status: categories migration created locally; not applied live
 - Clean checkpoint: `e435950 chore: reset Supabase backend foundation`
 
 ## Current Status
@@ -15,6 +15,7 @@
 - Public database functions/triggers: profile/preferences timestamp and new-user bootstrap functions are defined in a local migration only
 - Frontend screens remain on the existing local/mock data path
 - Supabase Auth service/provider exists locally and is not used for finance data yet
+- Categories schema/service/hooks exist locally and are not connected to UI pages yet
 
 ## Integration Order
 
@@ -40,7 +41,7 @@ Tables are planned but not created yet:
 
 - profiles
 - user_preferences
-- categories
+- categories: local migration created, not applied live
 - payment_methods
 - transactions
 - expected_transactions
@@ -173,3 +174,87 @@ Auth bootstrap and RLS runtime test status:
 Next planned step:
 
 - Step 4C should commit the local Step 4/4B files and note that live Auth bootstrap/RLS user-context verification remains pending.
+
+## Step 5 Categories Schema
+
+Status:
+
+- Migration file: `supabase/migrations/20260902211646_create_categories.sql`
+- Migration has been applied to the live Supabase project.
+- `public.categories` is planned as user-owned rows, not global shared/system categories.
+- Default categories are copied into each user's account during new-user bootstrap.
+- Local TypeScript table types were added for categories only.
+- `src/services/categoryService.ts` and `src/hooks/useCategories.ts` provide isolated category CRUD helpers.
+- Existing Categories UI and finance workflows remain on the current local/mock data path.
+
+Categories table model:
+
+- `user_id` references `auth.users(id)` with cascade delete.
+- `type` is constrained to `income`, `expense`, `savings`, or `debt`.
+- `name` is required and cannot be blank.
+- `(user_id, type, name)` is unique.
+- `color` is nullable but must be a hex color when present.
+- `is_default` marks copied starter categories.
+- `is_archived` supports non-destructive category hiding.
+
+RLS ownership model:
+
+- Users can select, insert, update, and delete only their own categories.
+- Insert and update policies use `with check ((select auth.uid()) = user_id)`.
+- No anon access policy is defined.
+
+Default category bootstrap:
+
+- `public.create_default_categories_for_user(target_user_id uuid)` inserts starter income, expense, savings, and debt categories for a user.
+- Inserts use stable `sort_order` values and `on conflict (user_id, type, name) do nothing`.
+- `public.handle_new_user()` is updated to preserve profile/preferences bootstrap and then call `public.create_default_categories_for_user(new.id)`.
+- Direct execute privileges are revoked from `public`, `anon`, and `authenticated`.
+
+Still not created:
+
+- Transactions table
+- Expected transactions table
+- Payment methods table
+- Savings/debt tables
+- Storage buckets
+- Finance data page integrations
+
+Pending from Step 4B:
+
+- Runtime Auth bootstrap testing is still pending because email signup hit validation/rate limiting and anonymous Auth is disabled.
+- Full authenticated RLS user-context testing is pending until a test auth session can be created.
+
+## Step 5B Apply And Verify Categories
+
+Live apply status:
+
+- Applied live through Supabase MCP as `20260902211646_create_categories`.
+- The local migration filename was aligned to the live migration version after apply to avoid migration history drift.
+- Verified `public.categories` exists.
+- Verified RLS is enabled on `public.categories`.
+- Verified owner-scoped select, insert, update, and delete policies exist.
+- Verified `public.create_default_categories_for_user(target_user_id uuid)` exists.
+- Verified `public.handle_new_user()` calls `public.create_default_categories_for_user(new.id)`.
+- Verified `categories_set_updated_at` exists and uses `public.set_updated_at()`.
+- Verified storage buckets remain empty.
+- Verified no transactions, expected_transactions, payment_methods, savings/debt, budget snapshot, archived budget, or notifications tables exist.
+- Security advisors report no lints.
+
+Default category verification:
+
+- Planned defaults were verified from the function source and an equivalent read-only count query.
+- Income defaults: 5.
+- Expense defaults: 13.
+- Savings defaults: 6.
+- Debt defaults: 6.
+- Total defaults: 30.
+
+Auth bootstrap and RLS runtime test status:
+
+- Runtime signup/bootstrap testing remains pending because recent signup attempts hit email validation/rate limiting and anonymous Auth is disabled.
+- Full authenticated user-context category RLS testing is pending until a test auth session can be created.
+- No test Auth users or category rows were created during Step 5B.
+
+Next planned step:
+
+- Step 5C should commit the Step 5/5B local files, then Step 6 can define the payment_methods schema.

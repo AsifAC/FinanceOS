@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      categories: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          type: SupabaseCategoryType;
+          icon: string | null;
+          color: string | null;
+          sort_order: number | null;
+          is_default: boolean | null;
+          is_archived: boolean | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          type: SupabaseCategoryType;
+          icon?: string | null;
+          color?: string | null;
+          sort_order?: number | null;
+          is_default?: boolean | null;
+          is_archived?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          type?: SupabaseCategoryType;
+          icon?: string | null;
+          color?: string | null;
+          sort_order?: number | null;
+          is_default?: boolean | null;
+          is_archived?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
@@ -107,6 +149,12 @@ export type Database = {
   };
 };
 
+export type SupabaseCategoryType = "income" | "expense" | "savings" | "debt";
+export type Category = Database["public"]["Tables"]["categories"]["Row"];
+export type CategoryInsert =
+  Database["public"]["Tables"]["categories"]["Insert"];
+export type CategoryUpdate =
+  Database["public"]["Tables"]["categories"]["Update"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
 export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];

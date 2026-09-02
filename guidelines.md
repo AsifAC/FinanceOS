@@ -2677,3 +2677,83 @@ Bootstrap and RLS runtime test status:
 Recommended next step:
 
 - Step 4C should commit the Step 4/4B local files, then Step 5 can define the categories schema after bootstrap/RLS runtime verification is revisited.
+
+## Supabase Backend Restart - Step 5 Categories Schema - 2026-09-02
+
+Categories schema status:
+
+- Local migration file: `supabase/migrations/20260902211646_create_categories.sql`.
+- The migration has been applied to the live Supabase project.
+- Categories are user-owned rows, not global shared/system categories.
+- Default categories are copied per user during signup bootstrap.
+- No transactions, expected transactions, payment methods, savings/debt tables, or storage buckets are created in this migration.
+
+Categories table model:
+
+- `public.categories.user_id` references `auth.users.id` and cascades on user deletion.
+- Category `type` is constrained to `income`, `expense`, `savings`, or `debt`.
+- Category `name` is required, cannot be blank, and is unique per `(user_id, type, name)`.
+- Category `color` is nullable but must be a hex-like `#RRGGBB` value when present.
+- `sort_order` defaults to `0`.
+- `is_default` marks starter categories inserted at signup.
+- `is_archived` supports hiding categories without deleting them.
+
+RLS ownership model:
+
+- RLS is enabled on `public.categories`.
+- Users can select, insert, update, and delete only rows where `(select auth.uid()) = user_id`.
+- Insert and update policies use `with check` so users cannot create or reassign categories for another user.
+- No anonymous access policy exists for categories.
+
+Default category bootstrap:
+
+- `public.create_default_categories_for_user(target_user_id uuid)` inserts starter income, expense, savings, and debt categories.
+- The helper uses stable sort orders and `on conflict (user_id, type, name) do nothing` to avoid duplicates.
+- `public.handle_new_user()` is updated to preserve profile/preferences bootstrap and then call `public.create_default_categories_for_user(new.id)`.
+- Direct execute privileges for the helper remain revoked from `public`, `anon`, and `authenticated`.
+
+Local integration status:
+
+- `src/types/supabase.ts` includes local types for `categories`, `profiles`, and `user_preferences` only.
+- `src/services/categoryService.ts` and `src/hooks/useCategories.ts` provide isolated category fetch/create/update/archive/delete helpers.
+- Existing Categories UI remains connected to the local FinanceOS store, not Supabase.
+- Preview/mock categories remain separate from Supabase categories.
+
+Pending verification:
+
+- Step 4B runtime Auth bootstrap testing remains pending because email signup hit validation/rate limiting and anonymous Auth is disabled.
+- Full authenticated user-context RLS testing remains pending until a test auth session can be created.
+
+## Supabase Backend Restart - Step 5B Apply And Verify Categories - 2026-09-02
+
+Live apply status:
+
+- Applied the categories migration live through Supabase MCP.
+- Live migration history records `20260902211646_create_categories`.
+- The local migration filename was aligned to `supabase/migrations/20260902211646_create_categories.sql` after apply to avoid migration history drift.
+- Verified `public.categories` exists.
+- Verified RLS is enabled on `public.categories`.
+- Verified owner-only select, insert, update, and delete policies exist for categories.
+- Verified `public.create_default_categories_for_user(target_user_id uuid)` exists as `security definer` with an explicit empty `search_path`.
+- Verified `public.handle_new_user()` calls `public.create_default_categories_for_user(new.id)`.
+- Verified `categories_set_updated_at` exists and executes `public.set_updated_at()`.
+- Verified storage buckets remain empty.
+- Verified no transactions, expected_transactions, payment_methods, savings/debt, budget snapshot, archived budget, or notifications tables exist.
+- Security advisors report no lints.
+- Performance advisors report unused index info for the brand-new indexes, expected before app traffic.
+
+Default category verification:
+
+- Default category function source contains the planned starter categories.
+- Expected default counts are income `5`, expense `13`, savings `6`, debt `6`, total `30`.
+- Runtime default insertion remains pending until Auth signup testing can create a session.
+
+Bootstrap and RLS runtime test status:
+
+- Runtime signup/bootstrap testing remains pending because recent signup attempts hit email validation/rate limiting and anonymous Auth is disabled.
+- Full authenticated category RLS testing remains pending until a test auth session can be created.
+- No test Auth users or category rows were created during Step 5B.
+
+Recommended next step:
+
+- Step 5C should commit the Step 5/5B local files, then Step 6 can define the payment_methods schema.
