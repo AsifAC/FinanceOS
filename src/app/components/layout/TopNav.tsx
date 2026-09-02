@@ -17,6 +17,7 @@ import { useFinanceData } from "../../lib/financeStore";
 import { MONTHS, currentMonthIndex, currentYear } from "../../lib/constants";
 import { useNotifications } from "../../lib/notifications";
 import { clearFinanceOSSession, getSwitchAccountRoute } from "../../lib/session";
+import { useAuth } from "../../../hooks/useAuth";
 import { MenuDropdown } from "./MenuDropdown";
 
 const pageTitles: Record<string, string> = {
@@ -56,10 +57,11 @@ export function TopNav() {
     setSelectedMonth,
     state,
   } = useFinanceData();
+  const { isAuthenticated, signOut: signOutAuth, user } = useAuth();
   const { unreadCount } = useNotifications();
   const pageTitle = pageTitles[location.pathname] ?? "FinanceOS";
   const profileName = state.setupProfile?.budgetName || "FinanceOS User";
-  const profileEmail = "No email connected";
+  const profileEmail = user?.email ?? (isAuthenticated ? "Email unavailable" : "No email connected");
   const initials = getInitials(profileName);
   const yearOptions = Array.from(new Set([
     String(Number(activeYear) - 1),
@@ -67,6 +69,18 @@ export function TopNav() {
     String(Number(activeYear) + 1),
     String(currentYear),
   ])).sort();
+  const handleSignOut = async () => {
+    const result = await signOutAuth();
+    clearFinanceOSSession();
+
+    if (!result.ok) {
+      toast.error(result.error.message);
+      return;
+    }
+
+    toast.info("Signed out of the current FinanceOS session.");
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-40 px-3 py-3 sm:px-6">
@@ -199,10 +213,9 @@ export function TopNav() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="items-start gap-3 rounded-2xl px-3 py-3 focus:bg-[#EF4444]/10"
-                  onSelect={() => {
-                    clearFinanceOSSession();
-                    toast.info("Signed out of the current FinanceOS session.");
-                    navigate("/");
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    void handleSignOut();
                   }}
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] bg-[#EF4444]/10 text-[#EF4444]">

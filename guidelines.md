@@ -2565,3 +2565,38 @@ Backend safety rules:
 - Service role keys are forbidden in frontend code, Vite env files, committed examples, docs examples, and screenshots.
 - Mock/preview mode must remain separate from real Supabase data.
 - Do not connect Dashboard, Reports, Savings, Debt, Transactions, or Archived Budgets to Supabase until their schema, RLS policies, and preview-mode boundaries are explicitly implemented.
+
+## Supabase Backend Restart - Step 3 Auth Foundation - 2026-09-02
+
+Auth foundation status:
+
+- Supabase Auth was added locally only.
+- `src/services/authService.ts` exposes `getCurrentSession`, `getCurrentUser`, email sign-up, email sign-in, sign-out, and auth state subscription helpers.
+- Auth service methods return typed sanitized results and do not throw raw Supabase errors into UI call sites.
+- `src/providers/AuthProvider.tsx` restores sessions on refresh, subscribes to auth state changes, and cleans up the subscription on unmount.
+- `src/hooks/useAuth.ts` exposes `user`, `session`, `isAuthenticated`, `isLoading`, `error`, `signUp`, `signIn`, `signOut`, and `refreshSession`.
+- `src/app/components/auth/RequireAuth.tsx` exists for future route protection but is not wired into finance routes yet.
+- `src/app/components/auth/AuthPanel.tsx` is a testing-only placeholder because no full login/signup page exists yet.
+- The existing profile menu sign-out action now calls Supabase sign-out when configured and remains non-destructive to FinanceOS budget data.
+
+Guest/mock mode behavior:
+
+- Landing page remains public.
+- Main app routes can still run without a logged-in Supabase user.
+- Missing `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` must not crash the app outside auth-only usage.
+- Preview/mock data remains isolated from Supabase auth state.
+- Auth state must not migrate, overwrite, or delete local/mock finance data.
+
+Backend safety checkpoint:
+
+- No finance database tables have been created yet.
+- No `profiles` or `user_preferences` tables have been created yet.
+- No RLS policies have been created yet.
+- No storage buckets have been created yet.
+- No database functions or triggers have been created yet.
+- Dashboard, Reports, Savings, Debt, Transactions, Expected Transactions, Archived Budgets, and Notifications remain disconnected from Supabase data.
+- Service role keys remain forbidden in frontend code and documentation examples.
+
+Recommended next step:
+
+- Step 4 should define and implement the `profiles` plus `user_preferences` schema with ownership/RLS rules before any finance data tables are introduced.
