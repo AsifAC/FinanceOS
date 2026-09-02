@@ -10,13 +10,13 @@ const typeLabels: Record<PaymentMethodType, string> = {
   other: "Other",
 };
 
-const typeGradients: Record<PaymentMethodType, string> = {
-  checking: "from-[#3B82F6] to-[#8B5CF6]",
-  savings: "from-[#00D68F] to-[#3B82F6]",
-  credit_card: "from-[#8B5CF6] to-[#6366F1]",
-  debit_card: "from-[#14B8A6] to-[#2563EB]",
-  cash: "from-[#F59E0B] to-[#F97316]",
-  other: "from-[#64748B] to-[#334155]",
+const typeColors: Record<PaymentMethodType, string> = {
+  checking: "#2563EB",
+  savings: "#00A676",
+  credit_card: "#7C3AED",
+  debit_card: "#0F766E",
+  cash: "#D97706",
+  other: "#475569",
 };
 
 export const paymentMethodTypeOptions = Object.entries(typeLabels).map(([value, label]) => ({ value: value as PaymentMethodType, label }));
@@ -37,21 +37,21 @@ export function PaymentMethodCard({
   onEdit?: (method: PaymentMethod) => void;
   onDelete?: (id: string) => void;
 }) {
-  const gradient = typeGradients[method.type];
+  const color = typeColors[method.type];
   const Icon = method.type === "cash" ? Wallet : method.type === "checking" || method.type === "savings" ? Landmark : CreditCard;
 
   return (
     <div className="financeos-payment-card group relative overflow-hidden rounded-[24px] border p-4 transition-colors">
-      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${gradient}`} />
+      <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: color }} />
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient}`}>
+          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: color }}>
             <Icon className="h-5 w-5 text-white" />
           </div>
           <p className="truncate text-base font-semibold text-[var(--financeos-text-primary)]">{method.nickname || typeLabels[method.type]}</p>
           <p className="mt-1 truncate text-sm text-[var(--financeos-text-muted)]">{method.institutionName || "Manual account"}</p>
         </div>
-        <span className={`shrink-0 rounded-full bg-gradient-to-r ${gradient} px-2.5 py-1 text-[11px] font-semibold text-white`}>
+        <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style={{ backgroundColor: color }}>
           {typeLabels[method.type]}
         </span>
       </div>

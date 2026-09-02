@@ -29,8 +29,8 @@ The app helps track:
 - React Router
 - Recharts and custom SVG charts
 - React Context + `useReducer` shared state
-- `localStorage` for temporary persistence while Supabase is not connected
-- Supabase planned for backend, database, and auth
+- `localStorage` for current frontend persistence
+- Backend, database, and auth provider are intentionally undecided
 - Vercel planned for deployment
 
 ## Current Architecture
@@ -216,12 +216,12 @@ Preview panel design rules:
 - Use rounded `18px` to `24px` card/table hybrid rows with subtle borders and shadows.
 - Avoid default browser table styling; preview rows should look like modern dense cards.
 - Preview filters should support `All`, `Income`, `Expense`, `Savings`, and `Debt`.
-- Type badges must use FinanceOS gradients:
+- Type badges must use FinanceOS solid semantic colors:
   - Income: `#00D68F` to `#00C26E`
   - Savings: `#3B82F6` to `#2563EB`
   - Debt: `#F59E0B` to `#D97706`
   - Expenses: `#EF4444` to `#DC2626`
-- `Save all` should use a primary accent gradient.
+- `Save all` should use a solid primary accent color.
 - `Clear preview` should be subtle danger styling, not a destructive full-red block.
 - Desktop layout should be two columns; mobile should stack the form above the preview panel.
 
@@ -259,131 +259,37 @@ Testing results:
 - Confirmed subtotal cards show pending income, expenses, savings, and debt totals.
 - Confirmed row removal and clear preview do not dispatch to global state.
 
-#### Supabase Backend Implementation Start - 2026-06-28
+#### Backend Reset - 2026-09-02
 
-Context:
+Backend status:
 
-- Supabase MCP server was added and authenticated for project `zmbyqstmgtdbyvczuvki`.
-- Optional Supabase agent skills installation is blocked by npm DNS/network failure:
-  - `getaddrinfo ENOTFOUND registry.npmjs.org`
-- This is an environment connectivity issue, not a FinanceOS app issue.
-- Do not block backend setup on `npx skills add supabase/agent-skills`.
+- Previous backend scaffolding was removed so FinanceOS can restart backend work from a clean slate.
+- The current app is frontend-only and persists user-entered data through `localStorage`.
+- Do not add backend provider SDKs, migrations, service wrappers, or environment keys until a new backend architecture is chosen.
+- Keep future backend code isolated from the active frontend store until a page or workflow is intentionally connected.
 
-Package status:
+Removed backend scaffolding:
 
-- `@supabase/supabase-js` is not installed.
-- Do not request or store the Supabase service role key in this frontend app.
-- Only frontend-safe Supabase variables should be used:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
+- Environment template with provider-specific variables.
+- Backend setup documentation.
+- Database migration and verification SQL files.
+- Browser backend client.
+- Service wrapper layer.
+- Service-backed React hooks.
 
-Manual setup completed:
+Next backend planning pass:
 
-- Created `.env.example` with frontend-safe Supabase variables.
-- Created `src/lib/supabaseClient.ts` for the browser Supabase client.
-- Created `docs/backend-setup.md` with manual setup, review, and apply instructions.
-- Created reviewable SQL migrations under `supabase/migrations/`.
-- Created `src/services/` typed service wrappers around the Supabase client.
-- Created `src/hooks/` service-backed hooks for gradual page integration.
-- Generated the required public schema tables:
-  - `profiles`
-  - `user_preferences`
-  - `categories`
-  - `payment_methods`
-  - `transactions`
-  - `expected_transactions`
-  - `savings_goals`
-  - `savings_contributions`
-  - `debts`
-  - `debt_payments`
-  - `budget_snapshots`
-  - `archived_budgets`
-  - `notifications`
-  - `reports_cache`
-  - `uploaded_files`
-- Added user-owned `user_id` columns referencing `auth.users(id)` to every app data table.
-- Added required indexes, including `user_id` indexes and year/month/type lookup indexes.
-- Enabled RLS for all FinanceOS tables.
-- Added select, insert, update, and delete policies scoped to `auth.uid() = user_id`.
-- Added auth signup defaults for profile, user preferences, and default categories.
-- Added private Supabase Storage buckets and object policies scoped to the first path folder matching `auth.uid()::text`.
-- Added `supabase/tests/rls_storage_verification.sql` as manual verification checks for RLS, signup defaults, storage policies, and isolation.
-- No destructive database changes were applied automatically.
-
-Prepared migrations:
-
-- `supabase/migrations/202606280001_core_schema.sql`
-- `supabase/migrations/202606280002_indexes.sql`
-- `supabase/migrations/202606280003_rls_policies.sql`
-- `supabase/migrations/202606280004_auth_defaults.sql`
-- `supabase/migrations/202606280005_storage.sql`
-
-RLS policy rule:
-
-- Every user-owned table must enable RLS.
-- Every user-owned table must include `user_id`.
-- Every select/update/delete policy must use `using (auth.uid() = user_id)`.
-- Every insert/update policy must use `with check (auth.uid() = user_id)`.
-
-Storage bucket rules:
-
-- `avatars`: private signed URL profile images at `{user_id}/avatar.png`.
-- `receipts`: private transaction receipts at `{user_id}/{transaction_id}/{filename}`.
-- `exports`: private annual report PDFs at `{user_id}/{year}/FinanceOS-Annual-Report-{year}.pdf`.
-- `attachments`: private supporting files at `{user_id}/{entity_type}/{entity_id}/{filename}`.
-- Storage object policies must check `(storage.foldername(name))[1] = auth.uid()::text`.
-- Exports stay private unless a signed URL is intentionally generated.
-
-Service and hook architecture:
-
-- `src/services/*Service.ts` files are the Supabase access boundary.
-- Services use the browser Supabase client only and never include service role logic.
-- Services explicitly resolve the authenticated user and also rely on RLS.
-- `src/hooks/*` files wrap services for gradual frontend integration.
-- Existing Preview Mode/mock data stays separate from real Supabase data until a page is intentionally connected.
-
-Integration order:
-
-1. Auth
-2. Profiles
-3. User preferences
-4. Categories
-5. Payment methods
-6. Transactions
-7. Expected transactions
-8. Savings goals
-9. Debts
-10. Dashboard calculations
-11. Reports
-12. Budget snapshots
-13. Archived budgets
-14. PDF exports/storage
-15. Notifications
-
-Retry when network/DNS is available:
-
-```sh
-npm install @supabase/supabase-js
-npx skills add supabase/agent-skills
-```
-
-Remaining TODOs:
-
-- Install `@supabase/supabase-js` after npm can resolve `registry.npmjs.org`.
-- Retry the optional Supabase agent skills install command.
-- Fill local `.env` from `.env.example`.
-- Review SQL migrations before applying them through Supabase Dashboard or CLI.
-- Implement auth UI and account-scoped data loading.
-- Replace placeholder session/logout behavior in `src/app/lib/session.ts`.
-- Add typed row mappers between `FinanceState` and Supabase tables.
+1. Choose backend provider and hosting model.
+2. Define auth/session requirements.
+3. Define database schema and ownership boundaries.
+4. Define import/export and backup requirements.
+5. Add a provider-specific integration only after the architecture is agreed.
 
 Testing results:
 
-- `npm run build` passes. Vite still reports the existing large chunk warning only.
-- `npm run lint --if-present` passes/no-ops because no lint script is configured.
-- `npm run typecheck --if-present` passes/no-ops because no typecheck script is configured.
-- `git diff --check` passes for Supabase/backend files.
-- `npm ls @supabase/supabase-js --depth=0` confirms the package is not installed while npm DNS remains unavailable.
+- `npm.cmd run typecheck` passes.
+- `npm.cmd run build` passes. Vite still reports the existing large chunk warning only.
+- `npm.cmd audit --audit-level=moderate` reports zero vulnerabilities.
 
 #### Settings Page UX/UI Redesign and Light Theme System - 2026-06-21
 
@@ -397,7 +303,7 @@ Light theme color system:
 - Borders: `#E2E8F0`.
 - Primary text: `#0F172A`.
 - Secondary text: `#475569`.
-- Continue using FinanceOS gradients for Income, Savings, Debt, and Expenses accents.
+- Continue using FinanceOS solid semantic colors for Income, Savings, Debt, and Expenses accents.
 - Chart labels, grid lines, legends, and tooltips must read from CSS variables so light and dark mode remain legible.
 - Toast notifications keep bottom-right positioning and use matching light/dark premium surfaces.
 
@@ -497,7 +403,7 @@ Dark mode palette:
 - `inputBorder`: `#252933`
 - `overlay`: `rgba(0, 0, 0, 0.65)`
 
-Accent gradients:
+Accent colors:
 
 - Income: `#00D68F` to `#00C26E`
 - Savings: `#3B82F6` to `#2563EB`
@@ -554,7 +460,7 @@ Light Mode readability rules:
 - Main headings and card titles use `var(--financeos-text-primary)`.
 - Body text uses `var(--financeos-text-secondary)`.
 - Helper, metadata, and empty-state text use `var(--financeos-text-muted)`.
-- Avoid `text-white`, `text-slate-100`, and `fill-white` on light cards unless the element sits on a gradient or strong accent background.
+- Avoid `text-white`, `text-slate-100`, and `fill-white` on light cards unless the element sits on a strong accent background.
 - Chart titles, SVG labels, Recharts labels, and chart tooltips must resolve through theme variables or light-mode overrides.
 - Portal-rendered surfaces must be readable in Light Mode because they can render outside `.financeos-premium`.
 
@@ -564,14 +470,14 @@ Circle and icon container rules:
 - Light Mode icon hover containers use `--financeos-icon-container-hover: #E2E8F0`.
 - Black circular backgrounds should not appear in Light Mode except as part of an intentional logo mark.
 - Calendar/today circles in Light Mode use a soft violet surface instead of `bg-slate-900`.
-- Icons inside gradient/accent containers may remain white when contrast is strong.
+- Icons inside solid accent containers may remain white when contrast is strong.
 
 Dashboard text rules:
 
 - Dashboard hero title uses `var(--financeos-text-primary)`.
-- Dashboard amount-left text uses `var(--financeos-text-primary)` unless placed on a gradient.
+- Dashboard amount-left text uses `var(--financeos-text-primary)` unless placed on a strong accent fill.
 - KPI labels and helper text must remain readable on light cards.
-- KPI icon glyphs may remain white inside gradient icon tiles.
+- KPI icon glyphs may remain white inside solid icon tiles.
 - Chart empty states, labels, axis ticks, legends, and tooltips must remain readable in Light Mode.
 
 Files changed:
@@ -776,7 +682,7 @@ Payment method card design:
 
 - Component location: `src/app/components/common/PaymentMethodCards.tsx`.
 - Cards use dark premium FinanceOS surfaces, rounded 20-24px corners, subtle borders, soft shadow, type badge, institution/bank name, nickname, optional network, and masked last four digits.
-- Type gradients:
+- Type accent colors:
   - Checking: blue/purple
   - Savings: green/blue
   - Credit Card: purple/indigo
@@ -922,11 +828,11 @@ Design language:
 - Card border: `1px solid #252933`
 - Soft shadows
 - Card radius: `20px` to `24px`
-- Gradients only for buttons, charts, KPI accents, and important status elements
+- Solid colors only for buttons, charts, KPI accents, and important status elements
 - Premium finance dashboard style, not cyberpunk
 - Modern SaaS feel
 - No old plain/default UI elements
-- No loud full-page gradients, neon orbs, or glow-heavy backgrounds
+- No loud full-page effects, neon orbs, or glow-heavy backgrounds
 
 Color mapping:
 
@@ -955,7 +861,7 @@ All buttons should use the premium minimal fintech design system.
 
 Button requirements:
 
-- Dark base or restrained accent gradient
+- Dark base or restrained accent color
 - Smooth hover transition
 - Hover pop-out effect
 - Slight translate-up on hover
@@ -1026,7 +932,7 @@ The Reports page pie chart should use a modern premium donut/pie chart style.
 Pie chart requirements:
 
 - Dark premium chart card
-- Colorful but restrained gradient slices
+- Colorful but restrained solid slices
 - Slight elevated feel
 - Slices visually emphasized based on percentage
 - Hover expansion/elevation
@@ -1046,7 +952,7 @@ Expected vs Actual annual bar chart requirements:
 - Use `ResponsiveContainer` if using Recharts.
 - Parent container must have explicit responsive height.
 - Dark rounded tooltip and subtle legend.
-- Rounded/gradient bars.
+- Rounded solid bars.
 - No tiny squeezed chart.
 - No old/default chart style.
 
@@ -1132,10 +1038,10 @@ The shared store should support:
 
 ### Persistence Rules
 
-- If Supabase is not connected, persist real user-entered data to `localStorage`.
+- Persist real user-entered data to `localStorage` until a new backend is selected.
 - Do not persist dummy/sample data.
 - App should reload user-entered data after refresh.
-- Supabase remains the planned long-term backend.
+- Backend selection is intentionally open.
 
 ## Core Calculations
 
@@ -1319,19 +1225,19 @@ If a snapshot already exists for the same year/month:
 
 ## Backend / Database Plan
 
-Long-term backend should be Supabase.
+Backend work is intentionally reset. Do not assume a provider, SDK, auth model, migration system, or storage system.
 
-Planned Supabase tables:
+Potential domain entities:
 
-- `profiles`
-- `budget_years`
-- `categories`
-- `monthly_plans`
-- `monthly_category_plans`
-- `transactions`
-- `payment_plans`
-- `saved_monthly_budgets`
-- `saved_yearly_budgets`
+- Profiles
+- Budget years
+- Categories
+- Monthly plans
+- Monthly category plans
+- Transactions
+- Payment plans
+- Saved monthly budgets
+- Saved yearly budgets
 
 ### Saved Snapshot Tables
 
@@ -1361,13 +1267,10 @@ Planned Supabase tables:
 
 ### Security Plan
 
-- Use Supabase Auth.
-- Use Row Level Security.
 - Each user should only see their own financial data.
-- Do not hardcode Supabase keys.
-- Use environment variables:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
+- Do not hardcode secrets or provider keys.
+- Keep server-only credentials out of the frontend app.
+- Use environment variables for any future provider configuration.
 
 ## Important Bugs And Fixes
 
@@ -1415,7 +1318,7 @@ Fix direction:
 - Move app-wide data into shared state/store.
 - Make forms dispatch shared actions.
 - Make charts/cards derive data from shared state.
-- Persist real data to `localStorage` or Supabase.
+- Persist real data to `localStorage` until a backend is selected.
 
 ## Completed Work So Far
 
@@ -1441,9 +1344,9 @@ Fix direction:
 - Premium minimal fintech UI pass was added:
   - Two-tone dark app shell using `#0B0B0C` and `#121418`.
   - Shared cards use `#16181D`, `#252933` borders, 20-24px radius, subtle shadows, and small translate hover.
-  - Shared buttons use restrained dark styling and modern gradients only for primary/destructive actions.
+  - Shared buttons use restrained dark styling and solid colors for primary/destructive actions.
   - Dashboard hero/summary collapses into a compact sticky header on scroll.
-  - Dashboard KPI cards preserve Income, Savings, Debt, Expenses, Amount Left order and use the approved gradients.
+  - Dashboard KPI cards preserve Income, Savings, Debt, Expenses, Amount Left order and use the approved solid colors.
   - Reports, donut chart, planner chart, tracker, and route error surfaces were toned down from neon/glow styling.
   - Archived Budgets now uses expandable Notion-style year cards with month and Annual Summary entries.
 
@@ -1510,8 +1413,8 @@ npm run lint --if-present
 2. Make sure all forms write to shared state.
 3. Make sure every chart reads from derived real data.
 4. Continue checking mobile spacing and dense table/card layouts after the premium UI pass.
-5. Add Supabase connection later.
-6. Add auth later.
+5. Choose a backend architecture later.
+6. Add auth after backend architecture is selected.
 7. Add export/import backup later.
 8. Add more polish to mobile layouts.
 9. Add tests or a manual QA checklist.
@@ -2550,9 +2453,9 @@ Actual vs Expected chart color rule:
 - `Expected` bars use `EXPECTED_COLOR = "#94A3B8"` and `EXPECTED_HOVER_COLOR = "#64748B"`.
 - Legends and tooltips must label the series as `Actual` and `Expected`.
 
-Non-gradient bar rule:
+Solid bar rule:
 
-- Do not use SVG `linearGradient` fills for Actual vs Expected bars.
+- Do not use multi-stop SVG fills for Actual vs Expected bars.
 - Do not use category/KPI colors such as income green or dashboard purple for Expected bars.
 - Hover/active bars stay flat and use the matching hover constants.
 
@@ -2573,7 +2476,7 @@ Testing results:
 - `npm run build` passes. Vite still reports the existing large chunk warning only.
 - `npm run lint` fails because no `lint` script is configured in `package.json`.
 - `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
-- Static review confirms Dashboard and Reports Actual vs Expected bar charts use the shared constants, no longer define Actual/Expected bar gradients, and show `Actual` / `Expected` series names in legends and tooltips.
+- Static review confirms Dashboard and Reports Actual vs Expected bar charts use the shared constants, use solid bar colors, and show `Actual` / `Expected` series names in legends and tooltips.
 
 ## Archived Budget Annual PDF Export - 2026-06-27
 
@@ -2601,7 +2504,7 @@ Annual PDF report data structure:
 PDF fintech statement template rules:
 
 - Use a clean US Letter statement layout with a white/light background, charcoal text, blue accents, subtle grey borders, alternating table rows, section dividers, and readable spacing.
-- Do not use browser print output, screenshots of app pages, dark app backgrounds, heavy gradients, or clipped chart screenshots.
+- Do not use browser print output, screenshots of app pages, dark app backgrounds, heavy visual effects, or clipped chart screenshots.
 - Every page footer includes FinanceOS, report year, generated date, and page number.
 - Tables must truncate long text safely inside cells and keep money/percent values consistently formatted.
 
@@ -2609,12 +2512,11 @@ Actual blue / Expected grey PDF color rule:
 
 - Actual indicators use `#3B82F6`.
 - Expected indicators use `#94A3B8`.
-- Actual vs Expected PDF indicators must remain flat and non-gradient.
+- Actual vs Expected PDF indicators must remain flat and solid.
 
 File naming rule:
 
 - Annual PDF downloads use `FinanceOS-Annual-Report-{year}.pdf`.
-- Future Supabase export storage path can use `exports/{user_id}/{year}/FinanceOS-Annual-Report-{year}.pdf`.
 
 Files changed:
 

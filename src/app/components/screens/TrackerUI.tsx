@@ -80,12 +80,12 @@ function TrackerCard({ label, expected, actual, color, isInverse }: TrackerCardP
   const positive = isInverse ? diff <= 0 : diff >= 0;
   const status = statusFor(actual, expected, isInverse);
 
-  const gradient =
-    label.includes("Income") ? "from-[#00D68F] to-[#00C26E]" :
-    label.includes("Savings") ? "from-[#3B82F6] to-[#2563EB]" :
-    label.includes("Debt") ? "from-[#F59E0B] to-[#D97706]" :
-    label.includes("Expense") ? "from-[#EF4444] to-[#DC2626]" :
-    "from-[#8B5CF6] to-[#6366F1]";
+  const progressColor =
+    label.includes("Income") ? "#00A676" :
+    label.includes("Savings") ? "#2563EB" :
+    label.includes("Debt") ? "#D97706" :
+    label.includes("Expense") ? "#DC2626" :
+    "#7C3AED";
 
   return (
     <Card className="overflow-hidden shadow-sm">
@@ -104,8 +104,8 @@ function TrackerCard({ label, expected, actual, color, isInverse }: TrackerCardP
           </div>
           <div className="relative h-3 overflow-hidden rounded-full bg-white/10 shadow-inner shadow-black/40" aria-label={`${label} progress`}>
             <div
-              className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all duration-500`}
-              style={{ width: `${visualPct}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${visualPct}%`, backgroundColor: progressColor }}
             />
           </div>
           <div className="flex justify-between items-center">
@@ -260,18 +260,11 @@ export function TrackerUI() {
               <p className="text-xs text-[var(--financeos-text-muted)] mb-1">Budget Health Score</p>
               <div className="relative w-20 h-20 mx-auto my-1">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  <defs>
-                    <linearGradient id="budgetHealthGradient" x1="0" x2="1" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#3B82F6" />
-                      <stop offset="50%" stopColor="#8B5CF6" />
-                      <stop offset="100%" stopColor="#6366F1" />
-                    </linearGradient>
-                  </defs>
                   <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="3" />
                   <circle
                     cx="18" cy="18" r="15.9"
                     fill="none"
-                    stroke={budgetHealth >= 75 ? "url(#budgetHealthGradient)" : budgetHealth >= 50 ? "#f59e0b" : "#ef4444"}
+                    stroke={budgetHealth >= 75 ? "#2563EB" : budgetHealth >= 50 ? "#D97706" : "#DC2626"}
                     strokeWidth="3"
                     strokeDasharray={`${budgetHealth} ${100 - budgetHealth}`}
                     strokeLinecap="round"
@@ -356,7 +349,7 @@ export function TrackerUI() {
                 <span className="text-[var(--financeos-text-primary)]" style={{ fontWeight: 700 }}>{money(expected.savings)}</span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB]" style={{ width: `${clamp(monthlySavingsPct)}%` }} />
+                <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${clamp(monthlySavingsPct)}%` }} />
               </div>
               <div className="flex items-center justify-between">
                 <span className={`text-sm ${monthlySavingsStatus.tone}`} style={{ fontWeight: 700 }}>{monthlySavingsPct}%</span>
@@ -390,7 +383,7 @@ export function TrackerUI() {
                     <span className={`rounded-full px-2 py-1 text-[11px] ${goal.status.bg} ${goal.status.tone}`} style={{ fontWeight: 700 }}>{goal.status.label}</span>
                   </div>
                   <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB]" style={{ width: `${clamp(goal.pct)}%` }} />
+                    <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${clamp(goal.pct)}%` }} />
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-[var(--financeos-text-muted)]">
                     <span>{goal.pct}%</span>

@@ -28,11 +28,11 @@ type FormState = {
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
-const TYPE_OPTIONS: Array<{ value: CategoryType; label: string; gradient: string; ring: string }> = [
-  { value: "income", label: "Income", gradient: "from-[#00D68F] to-[#00C26E]", ring: "border-[#00D68F]/70 bg-[#00D68F]/10 text-[#F8FAFC]" },
-  { value: "expense", label: "Expense", gradient: "from-[#EF4444] to-[#DC2626]", ring: "border-[#EF4444]/70 bg-[#EF4444]/10 text-[#F8FAFC]" },
-  { value: "savings", label: "Savings", gradient: "from-[#3B82F6] to-[#2563EB]", ring: "border-[#3B82F6]/70 bg-[#3B82F6]/10 text-[#F8FAFC]" },
-  { value: "debt", label: "Debt", gradient: "from-[#F59E0B] to-[#D97706]", ring: "border-[#F59E0B]/70 bg-[#F59E0B]/10 text-[#F8FAFC]" },
+const TYPE_OPTIONS: Array<{ value: CategoryType; label: string; color: string; ring: string }> = [
+  { value: "income", label: "Income", color: "#00A676", ring: "border-[#00D68F]/70 bg-[#00D68F]/10 text-[#F8FAFC]" },
+  { value: "expense", label: "Expense", color: "#DC2626", ring: "border-[#EF4444]/70 bg-[#EF4444]/10 text-[#F8FAFC]" },
+  { value: "savings", label: "Savings", color: "#2563EB", ring: "border-[#3B82F6]/70 bg-[#3B82F6]/10 text-[#F8FAFC]" },
+  { value: "debt", label: "Debt", color: "#D97706", ring: "border-[#F59E0B]/70 bg-[#F59E0B]/10 text-[#F8FAFC]" },
 ];
 
 const FILTERS: Array<CategoryType | "all"> = ["all", "income", "expense", "savings", "debt"];
@@ -56,8 +56,8 @@ function typeLabel(type: CategoryType | "all") {
   return TYPE_OPTIONS.find((item) => item.value === type)?.label ?? type;
 }
 
-function typeGradient(type: CategoryType) {
-  return TYPE_OPTIONS.find((item) => item.value === type)?.gradient ?? "from-slate-500 to-slate-700";
+function typeColor(type: CategoryType) {
+  return TYPE_OPTIONS.find((item) => item.value === type)?.color ?? "#475569";
 }
 
 function validateForm(form: FormState): FormErrors {
@@ -119,7 +119,7 @@ function emptyForm(type: CategoryType, year: string): FormState {
 
 function TransactionTypeBadge({ type }: { type: CategoryType }) {
   return (
-    <span className={`inline-flex items-center rounded-full bg-gradient-to-r ${typeGradient(type)} px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm`}>
+    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm" style={{ backgroundColor: typeColor(type) }}>
       {typeLabel(type)}
     </span>
   );
@@ -293,7 +293,7 @@ function BatchTransactionForm({
         <div className="flex flex-col gap-2 pt-1 sm:flex-row">
           <Button
             onClick={onAdd}
-            className="gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] text-white shadow-[0_12px_30px_rgba(59,130,246,0.22)] hover:opacity-95"
+            className="gap-2 rounded-xl bg-[#2563EB] text-white shadow-[0_12px_30px_rgba(37,99,235,0.22)] hover:bg-[#1D4ED8]"
           >
             <PlusCircle className="h-4 w-4" />
             Add to preview
@@ -407,10 +407,10 @@ function TransactionPreviewPanel({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        {TYPE_OPTIONS.map(({ value, label, gradient }) => (
+        {TYPE_OPTIONS.map(({ value, label, color }) => (
           <div key={value} className="rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] p-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#94A3B8]">Total pending {label.toLowerCase()}</p>
-            <p className={`mt-2 bg-gradient-to-r ${gradient} bg-clip-text text-lg font-semibold text-transparent`}>
+            <p className="mt-2 text-lg font-semibold" style={{ color }}>
               ${totals[value].toLocaleString()}
             </p>
           </div>
@@ -452,7 +452,7 @@ function TransactionPreviewPanel({
       <Button
         disabled={!drafts.length}
         onClick={onSaveAll}
-        className="mt-5 w-full gap-2 rounded-xl bg-gradient-to-r from-[#00D68F] to-[#3B82F6] text-white shadow-[0_12px_30px_rgba(0,214,143,0.18)] hover:opacity-95 disabled:opacity-50"
+        className="mt-5 w-full gap-2 rounded-xl bg-[#00A676] text-white shadow-[0_12px_30px_rgba(0,166,118,0.18)] hover:bg-[#008F66] disabled:opacity-50"
       >
         <Save className="h-4 w-4" />
         Save all

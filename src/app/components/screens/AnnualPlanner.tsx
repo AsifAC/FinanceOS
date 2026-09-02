@@ -205,33 +205,15 @@ export function AnnualPlanner() {
               <div className="h-[300px] w-full sm:h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={compareData.slice(startMonth, endMonth + 1)} barSize={16} barGap={4} barCategoryGap="16%" margin={{ top: 14, right: 8, left: 0, bottom: 8 }}>
-                  <defs>
-                    <linearGradient id="plannerExpIncome" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#86efac" />
-                      <stop offset="100%" stopColor="#14b8a6" />
-                    </linearGradient>
-                    <linearGradient id="plannerActIncome" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#2563eb" />
-                    </linearGradient>
-                    <linearGradient id="plannerExpLeft" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#c4b5fd" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
-                    </linearGradient>
-                    <linearGradient id="plannerActLeft" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#67e8f9" />
-                      <stop offset="100%" stopColor="#a855f7" />
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                   <XAxis dataKey="month" tick={chartAxisTick} axisLine={false} tickLine={false} />
                   <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} width={44} />
                   <Tooltip contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => [`$${v}`, ""]} />
                   <Legend iconType="circle" iconSize={9} wrapperStyle={chartLegendStyle} />
-                  <Bar dataKey="Exp. Income" fill="url(#plannerExpIncome)" radius={[7, 7, 2, 2]} />
-                  <Bar dataKey="Act. Income" fill="url(#plannerActIncome)" radius={[7, 7, 2, 2]} />
-                  <Bar dataKey="Exp. Left" fill="url(#plannerExpLeft)" radius={[7, 7, 2, 2]} />
-                  <Bar dataKey="Act. Left" fill="url(#plannerActLeft)" radius={[7, 7, 2, 2]} />
+                  <Bar dataKey="Exp. Income" fill="#14B8A6" radius={[7, 7, 2, 2]} />
+                  <Bar dataKey="Act. Income" fill="#2563EB" radius={[7, 7, 2, 2]} />
+                  <Bar dataKey="Exp. Left" fill="#8B5CF6" radius={[7, 7, 2, 2]} />
+                  <Bar dataKey="Act. Left" fill="#06B6D4" radius={[7, 7, 2, 2]} />
                 </BarChart>
               </ResponsiveContainer>
               </div>

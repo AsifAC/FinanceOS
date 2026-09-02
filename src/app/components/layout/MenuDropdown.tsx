@@ -89,7 +89,7 @@ export function MenuDropdown() {
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 <span>{label}</span>
-                {index === 0 && <span className="ml-auto rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] px-2 py-0.5 text-[10px] font-semibold text-white">Home</span>}
+                {index === 0 && <span className="ml-auto rounded-full bg-[#7C3AED] px-2 py-0.5 text-[10px] font-semibold text-white">Home</span>}
               </NavLink>
             ))}
           </div>

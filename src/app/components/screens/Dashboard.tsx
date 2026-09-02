@@ -65,7 +65,7 @@ type Metric = {
   expected: number;
   icon: typeof TrendingUp;
   border: string;
-  gradient: string;
+  color: string;
   path?: string;
 };
 
@@ -99,7 +99,7 @@ function getMetricCards(currentActual: MonthlyAmount, currentExpected: MonthlyAm
       expected: currentExpected.income,
       icon: TrendingUp,
       border: "border-[#00D68F]/20",
-      gradient: "from-[#00D68F] to-[#00C26E]",
+      color: "#00A676",
       path: "/income",
     },
     {
@@ -108,7 +108,7 @@ function getMetricCards(currentActual: MonthlyAmount, currentExpected: MonthlyAm
       expected: currentExpected.savings,
       icon: PiggyBank,
       border: "border-[#3B82F6]/20",
-      gradient: "from-[#3B82F6] to-[#2563EB]",
+      color: "#2563EB",
     },
     {
       label: "Debt",
@@ -116,7 +116,7 @@ function getMetricCards(currentActual: MonthlyAmount, currentExpected: MonthlyAm
       expected: currentExpected.debt,
       icon: CreditCard,
       border: "border-[#F59E0B]/20",
-      gradient: "from-[#F59E0B] to-[#D97706]",
+      color: "#D97706",
     },
     {
       label: "Expenses",
@@ -124,7 +124,7 @@ function getMetricCards(currentActual: MonthlyAmount, currentExpected: MonthlyAm
       expected: currentExpected.expenses,
       icon: DollarSign,
       border: "border-[#EF4444]/20",
-      gradient: "from-[#EF4444] to-[#DC2626]",
+      color: "#DC2626",
       path: "/expenses",
     },
     {
@@ -133,13 +133,13 @@ function getMetricCards(currentActual: MonthlyAmount, currentExpected: MonthlyAm
       expected: getAmountLeft(currentExpected),
       icon: Wallet,
       border: "border-[#8B5CF6]/20",
-      gradient: "from-[#8B5CF6] to-[#6366F1]",
+      color: "#7C3AED",
     },
   ];
 }
 
 function MetricCard({ metric }: { metric: Metric }) {
-  const { label, actual, expected, icon: Icon, border, gradient, path } = metric;
+  const { label, actual, expected, icon: Icon, border, color, path } = metric;
   const change = pct(actual, expected);
   const isPositive = label === "Amount Left" || label === "Income" || label === "Savings"
     ? change >= 0
@@ -150,11 +150,11 @@ function MetricCard({ metric }: { metric: Metric }) {
       <CardContent className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm text-slate-300">{label}</span>
-          <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${gradient}`}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: color }}>
             <Icon className="h-4 w-4 text-white" />
           </div>
         </div>
-        <p className={`bg-gradient-to-r ${gradient} bg-clip-text text-2xl text-transparent`} style={{ fontWeight: 750 }}>
+        <p className="text-2xl" style={{ color, fontWeight: 750 }}>
           ${actual.toLocaleString()}
         </p>
         <div className="mt-1.5 flex items-center gap-2">
@@ -268,7 +268,7 @@ function ExpectedTransactionsCard({ currentExpected, selectedMonth, activeYear }
               Planned for {MONTHS[selectedMonth]} {activeYear}
             </p>
           </div>
-          <p className="bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] bg-clip-text text-3xl font-semibold text-transparent">
+          <p className="text-3xl font-semibold text-[#2563EB]">
             ${expectedTransactions.toLocaleString()}
           </p>
         </div>
@@ -475,14 +475,14 @@ function DashboardHero({
               <div className="flex items-center gap-2">
                 <Link
                   to="/add-transaction?type=income"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00D68F] to-[#00C26E] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#00A676] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#008F66] active:translate-y-0"
                 >
                   <TrendingUp className="h-4 w-4" />
                   Income
                 </Link>
                 <Link
                   to="/add-transaction?type=expense"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#EF4444] to-[#DC2626] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#DC2626] px-3 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#B91C1C] active:translate-y-0"
                 >
                   <PlusCircle className="h-4 w-4" />
                   Expense

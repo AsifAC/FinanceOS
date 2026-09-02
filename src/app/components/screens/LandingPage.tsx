@@ -211,12 +211,6 @@ function LandingDashboardShowcase({ ctas }: { ctas: LandingCtas }) {
                 <strong>$4,820 left</strong>
               </div>
               <svg className="financeos-cash-flow-chart" viewBox="0 0 420 190" role="img" aria-label="Cash flow line chart">
-                <defs>
-                  <linearGradient id="cashFlowFill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#C6FF00" stopOpacity="0.34" />
-                    <stop offset="100%" stopColor="#C6FF00" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
                 <path className="financeos-chart-area" d="M22 136 C72 118 92 92 133 102 C178 113 197 55 242 67 C282 78 304 38 346 49 C376 57 392 34 404 29 L404 170 L22 170 Z" />
                 <path className="financeos-chart-line" d="M22 136 C72 118 92 92 133 102 C178 113 197 55 242 67 C282 78 304 38 346 49 C376 57 392 34 404 29" />
                 {[22, 133, 242, 346, 404].map((x, index) => (

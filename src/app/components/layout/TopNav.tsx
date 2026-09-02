@@ -78,7 +78,7 @@ export function TopNav() {
               className="flex min-w-0 origin-left cursor-pointer items-center gap-3 rounded-[20px] transition duration-200 hover:scale-[1.01] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6]/50"
               aria-label="FinanceOS landing page"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-[var(--financeos-border)] bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-[var(--financeos-border)] bg-[#2563EB] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
                 <DollarSign className="h-5 w-5 text-white" />
               </span>
               <span className="min-w-0">
@@ -92,7 +92,7 @@ export function TopNav() {
                     {activeYear} Budget
                   </Badge>
                   {previewModeEnabled && (
-                    <Badge className="border-0 bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-[11px] text-white">
+                    <Badge className="border-0 bg-[#D97706] text-[11px] text-white">
                       Preview Data Enabled
                     </Badge>
                   )}
@@ -151,7 +151,7 @@ export function TopNav() {
                   className="h-11 gap-2 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-1.5 pr-3 text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
                   aria-label="Profile menu"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-xs font-bold text-white">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-xs font-bold text-white">
                     {initials}
                   </span>
                   <span className="hidden max-w-[8rem] truncate text-sm font-semibold md:inline">{profileName}</span>
@@ -160,7 +160,7 @@ export function TopNav() {
               <DropdownMenuContent align="end" sideOffset={10} className="w-[min(21rem,calc(100vw-1.5rem))] rounded-[20px] p-2">
                 <DropdownMenuLabel className="px-3 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-sm font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] bg-[#2563EB] text-sm font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
                       {initials}
                     </span>
                     <span className="min-w-0">

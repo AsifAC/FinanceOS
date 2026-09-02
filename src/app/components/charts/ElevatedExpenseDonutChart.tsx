@@ -11,17 +11,15 @@ interface PreparedDatum extends ExpenseDonutDatum {
   startAngle: number;
   endAngle: number;
   color: string;
-  gradientFrom: string;
-  gradientTo: string;
 }
 
 const PALETTE = [
-  { color: "#ef4444", gradientFrom: "#EF4444", gradientTo: "#DC2626" },
-  { color: "#f59e0b", gradientFrom: "#F59E0B", gradientTo: "#D97706" },
-  { color: "#3b82f6", gradientFrom: "#3B82F6", gradientTo: "#2563EB" },
-  { color: "#8b5cf6", gradientFrom: "#8B5CF6", gradientTo: "#6366F1" },
-  { color: "#00d68f", gradientFrom: "#00D68F", gradientTo: "#00C26E" },
-  { color: "#64748b", gradientFrom: "#94A3B8", gradientTo: "#64748B" },
+  { color: "#DC2626" },
+  { color: "#D97706" },
+  { color: "#2563EB" },
+  { color: "#7C3AED" },
+  { color: "#00A676" },
+  { color: "#64748B" },
 ];
 
 const ACTIVE_SLICE_OFFSET = 9;
@@ -133,15 +131,6 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
               role="img"
               aria-label="Expense category distribution donut chart"
             >
-              <defs>
-                {prepared.map((item) => (
-                  <linearGradient key={item.category} id={`gradient-${item.category.replace(/\W/g, "-")}`} x1="0%" x2="100%" y1="0%" y2="100%">
-                    <stop offset="0%" stopColor={item.gradientFrom} />
-                    <stop offset="100%" stopColor={item.gradientTo} />
-                  </linearGradient>
-                ))}
-              </defs>
-
               <circle cx="160" cy="160" r="111" fill="var(--financeos-surface-elevated)" stroke="var(--financeos-border)" strokeWidth="1" />
 
               {prepared.map((item) => {
@@ -149,7 +138,6 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
                 const offset = getOffset(item.startAngle, item.endAngle, isHovered ? ACTIVE_SLICE_OFFSET : 0);
                 const labelOffset = getOffset(item.startAngle, item.endAngle, 124);
                 const path = createDonutSlicePath(160, 160, DONUT_OUTER_RADIUS, DONUT_INNER_RADIUS, item.startAngle, item.endAngle);
-                const gradientId = `gradient-${item.category.replace(/\W/g, "-")}`;
 
                 return (
                   <g
@@ -168,7 +156,7 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
                   >
                     <path
                       d={path}
-                      fill={`url(#${gradientId})`}
+                      fill={item.color}
                       stroke="var(--financeos-surface)"
                       strokeLinejoin="round"
                       strokeWidth={isHovered ? 4 : 3}
@@ -241,7 +229,7 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
               >
                 <span
                   className="h-3 w-3 shrink-0 rounded-full shadow-lg"
-                  style={{ background: `linear-gradient(135deg, ${item.gradientFrom}, ${item.gradientTo})` }}
+                  style={{ backgroundColor: item.color }}
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-[var(--financeos-text-primary)]" style={{ fontWeight: 600 }}>{item.category}</span>

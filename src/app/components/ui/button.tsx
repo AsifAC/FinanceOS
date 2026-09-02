@@ -10,9 +10,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white shadow-black/20 hover:border-blue-300/20",
+          "border-transparent bg-[#2563EB] text-white shadow-black/20 hover:border-blue-300/20 hover:bg-[#1D4ED8]",
         destructive:
-          "border-transparent bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white shadow-black/20 hover:border-red-300/20 focus-visible:ring-red-300/25",
+          "border-transparent bg-[#DC2626] text-white shadow-black/20 hover:border-red-300/20 hover:bg-[#B91C1C] focus-visible:ring-red-300/25",
         outline:
           "border-[var(--financeos-border)] bg-[var(--financeos-surface)] text-[var(--financeos-text-primary)] shadow-black/10 hover:border-[var(--financeos-border-strong)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]",
         secondary:

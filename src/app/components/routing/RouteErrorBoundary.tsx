@@ -19,7 +19,7 @@ export function RouteErrorBoundary() {
   const details = getErrorDetails(error);
 
   return (
-    <main className="financeos-premium flex min-h-screen items-center justify-center bg-[linear-gradient(to_bottom,#0B0B0C_0,#0B0B0C_18rem,#121418_18rem,#121418_100%)] px-4 py-10 text-slate-100">
+    <main className="financeos-premium flex min-h-screen items-center justify-center bg-[#121418] px-4 py-10 text-slate-100">
       <section className="w-full max-w-xl rounded-[24px] border border-[#252933] bg-[#16181D] p-6 shadow-[0_22px_54px_rgba(0,0,0,0.28)] sm:p-8">
         <div>
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-300/25 bg-rose-500/12 shadow-lg shadow-rose-500/20">

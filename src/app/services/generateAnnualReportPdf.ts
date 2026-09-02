@@ -336,12 +336,12 @@ export function buildAnnualReportData(snapshot: SavedYearlyBudget, profileName?:
     selectedYear: summary.year,
   }).score;
 
-  const comparisons = [
+  const comparisons: Array<[string, number, number]> = [
     ["Income", summary.total_income, summary.expected_yearly_income],
     ["Expenses", summary.total_expenses, summary.expected_yearly_expenses],
     ["Savings", summary.total_savings, summary.expected_yearly_savings],
     ["Debt payments", summary.total_debt, summary.expected_yearly_debt],
-  ] as const;
+  ];
 
   return {
     year: summary.year,

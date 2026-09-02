@@ -152,18 +152,18 @@ export function Settings() {
               <Label>Accent color</Label>
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {[
-                  ["Income", "from-[#00D68F] to-[#00C26E]"],
-                  ["Savings", "from-[#3B82F6] to-[#2563EB]"],
-                  ["Debt", "from-[#F59E0B] to-[#D97706]"],
-                  ["Expenses", "from-[#EF4444] to-[#DC2626]"],
-                ].map(([label, gradient]) => (
+                  ["Income", "#00A676"],
+                  ["Savings", "#2563EB"],
+                  ["Debt", "#D97706"],
+                  ["Expenses", "#DC2626"],
+                ].map(([label, color]) => (
                   <button
                     type="button"
                     key={label}
                     onClick={() => toast.info(`${label} accent selected`)}
                     className="flex min-h-14 flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-2 text-[11px] font-semibold text-[var(--financeos-text-secondary)] transition-colors hover:border-[#8B5CF6]/50"
                   >
-                    <span className={`h-3 w-10 rounded-full bg-gradient-to-r ${gradient}`} />
+                    <span className="h-3 w-10 rounded-full" style={{ backgroundColor: color }} />
                     {label}
                   </button>
                 ))}
@@ -301,7 +301,7 @@ export function Settings() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex flex-col gap-4 rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] p-4 sm:flex-row sm:items-center">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#2563EB]">
                 <User className="h-7 w-7 text-white" />
               </div>
               <div className="min-w-0 flex-1">

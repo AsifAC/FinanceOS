@@ -172,7 +172,7 @@
   .financeos-premium {
     color-scheme: dark;
     min-height: 100vh;
-    background: linear-gradient(to bottom, var(--financeos-bg-primary) 0, var(--financeos-bg-primary) 18rem, var(--financeos-bg-secondary) 18rem, var(--financeos-bg-secondary) 100%);
+    background: var(--financeos-bg-secondary);
     color: var(--financeos-text-primary);
   }
 
@@ -290,8 +290,8 @@
   .financeos-premium [data-slot="button"].bg-blue-600,
   .financeos-premium [data-slot="button"].hover\:bg-blue-700,
   .financeos-premium button.bg-blue-600 {
-    background-image: linear-gradient(135deg, #3B82F6, #2563EB) !important;
-    background-color: transparent !important;
+    background-image: none !important;
+    background-color: #2563EB !important;
     border-color: rgb(59 130 246 / 0.3) !important;
     color: white !important;
   }
@@ -299,8 +299,8 @@
   .financeos-premium [data-slot="button"].bg-red-600,
   .financeos-premium [data-slot="button"].hover\:bg-red-700,
   .financeos-premium button.bg-red-600 {
-    background-image: linear-gradient(135deg, #EF4444, #DC2626) !important;
-    background-color: transparent !important;
+    background-image: none !important;
+    background-color: #DC2626 !important;
     border-color: rgb(251 113 133 / 0.35) !important;
     color: white !important;
   }
@@ -325,7 +325,7 @@
 
   .financeos-control-card {
     border-color: var(--financeos-border) !important;
-    background: linear-gradient(180deg, var(--financeos-surface-elevated), var(--financeos-surface)) !important;
+    background: var(--financeos-surface) !important;
     color: var(--financeos-text-primary);
   }
 
@@ -983,7 +983,7 @@
   [data-sonner-toast].financeos-toast {
     border: 1px solid #252933 !important;
     border-radius: 20px !important;
-    background: linear-gradient(180deg, rgb(28 31 38 / 0.98), rgb(22 24 29 / 0.98)) !important;
+    background: rgb(22 24 29 / 0.98) !important;
     color: #f8fafc !important;
     box-shadow: 0 22px 60px rgb(0 0 0 / 0.42) !important;
     backdrop-filter: blur(18px);
@@ -1008,7 +1008,7 @@
 
   .financeos-toast-action {
     border-radius: 999px !important;
-    background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+    background: #2563EB !important;
     color: white !important;
   }
 
@@ -1038,7 +1038,7 @@
   .financeos-theme-light .financeos-toaster [data-sonner-toast],
   .financeos-theme-light [data-sonner-toast].financeos-toast {
     border-color: #E2E8F0 !important;
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(250 251 253 / 0.98)) !important;
+    background: rgb(255 255 255 / 0.98) !important;
     color: #0F172A !important;
     box-shadow: 0 22px 60px rgb(15 23 42 / 0.14) !important;
   }

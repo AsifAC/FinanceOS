@@ -95,11 +95,11 @@ function NotificationCard({ notification }: { notification: FinanceNotification 
         "relative overflow-hidden rounded-[22px] border bg-[var(--financeos-surface)] p-4 shadow-[var(--financeos-shadow-card)] transition-colors sm:p-5",
         notification.read
           ? "border-[var(--financeos-border)]"
-          : "border-[#8B5CF6]/45 bg-[linear-gradient(135deg,var(--financeos-surface)_0%,var(--financeos-surface-elevated)_100%)]",
+          : "border-[#8B5CF6]/45 bg-[var(--financeos-surface-elevated)]",
       )}
     >
       {!notification.read && (
-        <span className="absolute left-0 top-5 h-10 w-1 rounded-r-full bg-gradient-to-b from-[#8B5CF6] to-[#6366F1]" />
+        <span className="absolute left-0 top-5 h-10 w-1 rounded-r-full bg-[#7C3AED]" />
       )}
       <div className="flex gap-4">
         <div

@@ -200,9 +200,9 @@ export function ExpenseTracker() {
             </CardHeader>
             <CardContent className="pt-3">
               <div className="space-y-2">
-                {categoryTotals.map((c, i) => (
-                  <div key={c.name} className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full shrink-0 bg-gradient-to-br from-[#3B82F6] to-[#2563EB]" />
+                {categoryTotals.map((c) => (
+                  <div key={c.category} className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full shrink-0 bg-[#2563EB]" />
                     <span className="text-xs text-slate-600 flex-1">{c.category}</span>
                     <span className="text-xs text-slate-800" style={{ fontWeight: 500 }}>${c.amount}</span>
                   </div>

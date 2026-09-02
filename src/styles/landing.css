@@ -54,7 +54,7 @@
     position: absolute;
     inset: 0 -1rem;
     z-index: -1;
-    background: linear-gradient(180deg, rgb(5 6 6 / 0.9), rgb(5 6 6 / 0.52) 72%, transparent);
+    background: rgb(5 6 6 / 0.72);
     content: "";
     pointer-events: none;
   }
@@ -88,7 +88,7 @@
     place-items: center;
     border: 1px solid rgb(198 255 0 / 0.38);
     border-radius: 0.95rem;
-    background: linear-gradient(145deg, #c6ff00, #8cc800);
+    background: #C6FF00;
     color: #0b0b0c;
     box-shadow: 0 18px 42px rgb(198 255 0 / 0.2);
   }
@@ -251,17 +251,14 @@
     align-items: center;
     gap: clamp(3rem, 6vw, 7rem);
     padding: 8.5rem max(1.25rem, calc((100vw - 1240px) / 2)) 5.5rem;
-    background:
-      radial-gradient(circle at 70% 38%, rgb(198 255 0 / 0.13), transparent 26rem),
-      radial-gradient(circle at 14% 22%, rgb(59 130 246 / 0.18), transparent 28rem),
-      linear-gradient(180deg, #050606 0%, #090c0e 70%, #0b0d10 100%);
+    background: #050606;
   }
 
   .financeos-landing-hero::after {
     position: absolute;
     inset: auto 0 0;
     height: 26rem;
-    background: linear-gradient(0deg, rgb(198 255 0 / 0.1), transparent 70%);
+    background: rgb(198 255 0 / 0.04);
     content: "";
     pointer-events: none;
   }
@@ -370,9 +367,7 @@
     min-height: 28rem;
     border: 1px solid rgb(247 247 239 / 0.16);
     border-radius: 2rem;
-    background:
-      linear-gradient(145deg, rgb(247 247 239 / 0.1), transparent 34%),
-      linear-gradient(135deg, rgb(13 18 20 / 0.96), rgb(20 29 32 / 0.92));
+    background: rgb(13 18 20 / 0.96);
     padding: 1.2rem;
     box-shadow: 0 44px 110px rgb(0 0 0 / 0.52), inset 0 1px 0 rgb(255 255 255 / 0.12);
     transform: rotateX(12deg) rotateY(-18deg) rotateZ(1deg);
@@ -430,10 +425,7 @@
     height: 5.8rem;
     margin-top: 1rem;
     border-radius: 1rem;
-    background:
-      linear-gradient(rgb(247 247 239 / 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(247 247 239 / 0.08) 1px, transparent 1px);
-    background-size: 100% 33%, 14.28% 100%;
+    background: rgb(247 247 239 / 0.055);
   }
 
   .financeos-device-line i {
@@ -463,7 +455,7 @@
     width: 74%;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--landing-lime), #ffffff);
+    background: var(--landing-lime);
     animation: financeosProgressDraw 1.25s var(--landing-ease) both;
   }
 
@@ -556,9 +548,7 @@
     overflow: hidden;
     border: 1px solid rgb(247 247 239 / 0.18);
     border-radius: 1.8rem;
-    background:
-      radial-gradient(circle at 50% 74%, rgb(59 130 246 / 0.44), transparent 20rem),
-      linear-gradient(180deg, #050606, #020303);
+    background: #050606;
     padding: clamp(1.5rem, 3vw, 3rem);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
   }
@@ -603,7 +593,7 @@
     place-items: center;
     border: 1px solid rgb(190 220 255 / 0.28);
     border-radius: 1.4rem;
-    background: linear-gradient(145deg, rgb(53 132 255 / 0.08), rgb(91 154 255 / 0.42));
+    background: rgb(37 99 235 / 0.32);
     color: rgb(247 247 239 / 0.56);
     font-size: 0.76rem;
     font-weight: 900;
@@ -626,10 +616,7 @@
     min-height: 15.5rem;
     border: 1px solid rgb(247 247 239 / 0.26);
     border-radius: 1.6rem;
-    background:
-      radial-gradient(circle at 50% 105%, rgb(255 255 255 / 0.9), transparent 10rem),
-      radial-gradient(circle at 42% 92%, rgb(37 99 235 / 0.95), transparent 13rem),
-      linear-gradient(145deg, #111827, #1d2942);
+    background: #1D4ED8;
     padding: 2rem;
     color: #ffffff;
     box-shadow: 0 42px 80px rgb(37 99 235 / 0.38);
@@ -662,7 +649,7 @@
     bottom: 0;
     left: -6%;
     height: 10rem;
-    background: radial-gradient(ellipse at center, rgb(37 99 235 / 0.45), transparent 70%);
+    background: rgb(37 99 235 / 0.28);
     filter: blur(8px);
   }
 
@@ -673,10 +660,7 @@
     align-items: center;
     gap: clamp(2rem, 5vw, 5rem);
     padding: clamp(5rem, 8vw, 8rem) max(1rem, calc((100vw - 1240px) / 2));
-    background:
-      linear-gradient(90deg, rgb(0 0 0 / 0.28), transparent 58%),
-      radial-gradient(circle at 36% 44%, rgb(198 255 0 / 0.08), transparent 28rem),
-      linear-gradient(180deg, #151a1d, #565c55 62%, #141617);
+    background: #151A1D;
   }
 
   .financeos-monitor-visual {
@@ -691,7 +675,7 @@
     min-height: 25rem;
     border: 1px solid rgb(247 247 239 / 0.18);
     border-radius: 1.1rem;
-    background: linear-gradient(145deg, #10171a, #263033);
+    background: #10171A;
     padding: 1rem;
     box-shadow: 0 40px 90px rgb(0 0 0 / 0.48);
     transform: rotateY(18deg) rotateX(4deg);
@@ -734,11 +718,7 @@
   .financeos-cash-flow-card {
     min-height: 18rem;
     grid-row: span 2;
-    background:
-      linear-gradient(rgb(247 247 239 / 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(247 247 239 / 0.05) 1px, transparent 1px),
-      rgb(247 247 239 / 0.055);
-    background-size: 100% 25%, 12.5% 100%;
+    background: rgb(247 247 239 / 0.055);
     padding: 1rem 1rem 0.75rem;
   }
 
@@ -860,8 +840,8 @@
     width: 4.9rem;
     height: 4.9rem;
     border-radius: 999px;
-    background: conic-gradient(var(--landing-lime) 0 52%, #60a5fa 52% 76%, #f59e0b 76% 88%, rgb(247 247 239 / 0.14) 88% 100%);
-    mask: radial-gradient(circle, transparent 48%, #000 50%);
+    background: var(--landing-lime);
+    border: 1rem solid #60A5FA;
     animation: financeosDonutPulse 5.8s var(--landing-ease) infinite;
   }
 
@@ -913,7 +893,7 @@
     width: var(--bar-width);
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--landing-lime), rgb(255 255 255 / 0.74));
+    background: var(--landing-lime);
     transform: scaleX(0);
     transform-origin: left center;
     animation: financeosPlanBarFill 1s var(--landing-ease) forwards;
@@ -973,9 +953,7 @@
     align-items: center;
     gap: clamp(2rem, 5vw, 5rem);
     padding: clamp(5rem, 8vw, 8rem) max(1rem, calc((100vw - 1240px) / 2));
-    background:
-      radial-gradient(circle at 75% 70%, rgb(59 130 246 / 0.42), transparent 27rem),
-      linear-gradient(180deg, #060707, #111827 55%, #7f8aa3 100%);
+    background: #111827;
   }
 
   .financeos-snapshot-stack {
@@ -992,7 +970,7 @@
     min-height: 11rem;
     border: 1px solid rgb(247 247 239 / 0.18);
     border-radius: 1.5rem;
-    background: linear-gradient(145deg, rgb(247 247 239 / 0.14), rgb(247 247 239 / 0.05));
+    background: rgb(247 247 239 / 0.10);
     padding: 1.3rem;
     box-shadow: 0 28px 70px rgb(0 0 0 / 0.34);
     transform: rotateX(12deg) rotateY(-18deg) translateZ(calc(var(--snapshot-index) * 34px));
@@ -1019,7 +997,7 @@
     height: 0.7rem;
     margin-top: 1.3rem;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--landing-lime), rgb(255 255 255 / 0.8));
+    background: var(--landing-lime);
   }
 
   .financeos-trust-section {
@@ -1086,9 +1064,7 @@
     min-height: 46rem;
     place-items: center;
     padding: clamp(5rem, 8vw, 8rem) 1rem;
-    background:
-      radial-gradient(circle at center, rgb(198 255 0 / 0.08), transparent 28rem),
-      #050505;
+    background: #050505;
   }
 
   .financeos-budget-bars {
@@ -1106,7 +1082,7 @@
     width: 0.18rem;
     height: clamp(4rem, 10vw, 8rem);
     justify-self: center;
-    background: linear-gradient(180deg, transparent, rgb(247 247 239 / 0.86), transparent);
+    background: rgb(247 247 239 / 0.72);
     transform: translateY(calc((var(--bar-index) % 5) * 2rem)) rotate(calc((var(--bar-index) % 3 - 1) * 5deg));
     animation: financeosFallingBars 5.4s linear infinite;
     animation-delay: calc(var(--bar-index) * -160ms);

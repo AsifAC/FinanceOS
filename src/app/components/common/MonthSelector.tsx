@@ -1,4 +1,4 @@
-import { type CSSProperties, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, Check, ChevronDown } from "lucide-react";
 import { cn } from "../ui/utils";
@@ -46,7 +46,7 @@ export function MonthSelector({
       setOpen(false);
     }
 
-    function handleEscape(event: KeyboardEvent) {
+    function handleEscape(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
     }
 
@@ -107,7 +107,7 @@ export function MonthSelector({
     setOpen(false);
   }
 
-  function handleKeyboardNavigation(event: KeyboardEvent<HTMLElement>) {
+  function handleKeyboardNavigation(event: ReactKeyboardEvent<HTMLElement>) {
     if (event.key === "Escape") {
       setOpen(false);
       return;
@@ -134,7 +134,7 @@ export function MonthSelector({
     }
   }
 
-  function handleTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+  function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       if (open) selectMonth(focusedMonth);

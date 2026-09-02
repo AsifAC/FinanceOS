@@ -152,19 +152,13 @@ export function Reports() {
             <div className="h-[260px] w-full sm:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={savingsTrend}>
-                <defs>
-                  <linearGradient id="savingsLineGradient" x1="0" x2="1" y1="0" y2="0">
-                    <stop offset="0%" stopColor="#3B82F6" />
-                    <stop offset="100%" stopColor="#2563EB" />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="month" tick={chartMutedTick} axisLine={false} tickLine={false} />
                 <YAxis tick={chartMutedTick} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} width={44} />
                 <Tooltip contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => [`$${v}`, ""]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={chartLegendStyle} />
                 <Line type="monotone" dataKey="Expected" stroke="#8f98a8" strokeWidth={1.8} dot={false} strokeDasharray="4 3" />
-                <Line type="monotone" dataKey="Savings" stroke="url(#savingsLineGradient)" strokeWidth={2.4} dot={{ r: 3, fill: "#3B82F6", stroke: "#16181D", strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="Savings" stroke="#2563EB" strokeWidth={2.4} dot={{ r: 3, fill: "#2563EB", stroke: "#16181D", strokeWidth: 2 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
             </div>
@@ -185,19 +179,13 @@ export function Reports() {
             <div className="h-[260px] w-full sm:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={incomeTrend}>
-                <defs>
-                  <linearGradient id="incomeLineGradient" x1="0" x2="1" y1="0" y2="0">
-                    <stop offset="0%" stopColor="#00D68F" />
-                    <stop offset="100%" stopColor="#00C26E" />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="month" tick={chartMutedTick} axisLine={false} tickLine={false} />
                 <YAxis tick={chartMutedTick} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} width={44} />
                 <Tooltip contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => [`$${v}`, ""]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={chartLegendStyle} />
                 <Line type="monotone" dataKey="Expected" stroke="#8f98a8" strokeWidth={1.8} dot={false} strokeDasharray="4 3" />
-                <Line type="monotone" dataKey="Income" stroke="url(#incomeLineGradient)" strokeWidth={2.4} dot={{ r: 3, fill: "#00D68F", stroke: "#16181D", strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="Income" stroke="#00A676" strokeWidth={2.4} dot={{ r: 3, fill: "#00A676", stroke: "#16181D", strokeWidth: 2 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
             </div>
