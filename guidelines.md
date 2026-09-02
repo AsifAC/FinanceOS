@@ -2532,3 +2532,36 @@ Testing results:
 - `npm run typecheck` fails because no `typecheck` script is configured in `package.json`.
 - `npm run dev -- --host 127.0.0.1` cannot start in this sandbox because binding to `127.0.0.1:5173` fails with `EPERM`; live PDF download/open checks, desktop/mobile download behavior, and Light/Dark Mode browser checks could not be completed here.
 - Static review confirms annual PDF generation reads `SavedYearlyBudget.summary_json`, uses archived annual totals/monthly breakdown/category rankings/highlights/notes, downloads a named PDF file, and does not save generated PDF metadata to localStorage.
+
+## Supabase Backend Restart - Step 2 Local Foundation - 2026-09-02
+
+Supabase project status:
+
+- Live project `https://zmbyqstmgtdbyvczuvki.supabase.co` was verified clean by read-only MCP audit.
+- Public tables: none.
+- Public RLS policies: none.
+- Storage buckets: none.
+- Edge functions: none.
+- Public database functions/procedures: none.
+- Public triggers: none.
+- Security advisors: none.
+- Performance advisors: none.
+
+Step 2 local foundation status:
+
+- `@supabase/supabase-js` is installed for future frontend-safe Supabase integration.
+- `.env.example` documents `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- `src/lib/supabaseClient.ts` exports a typed Supabase client placeholder that reads from `import.meta.env`.
+- `src/services/`, `src/hooks/`, and `src/types/` exist for future backend integration.
+- `docs/supabase-backend-plan.md` tracks the rebuild plan and integration order.
+
+Backend safety rules:
+
+- No schema tables have been created yet.
+- No RLS policies have been created yet.
+- No storage buckets have been created yet.
+- No functions or triggers have been created yet.
+- Do not use or request the Supabase service role key for frontend work.
+- Service role keys are forbidden in frontend code, Vite env files, committed examples, docs examples, and screenshots.
+- Mock/preview mode must remain separate from real Supabase data.
+- Do not connect Dashboard, Reports, Savings, Debt, Transactions, or Archived Budgets to Supabase until their schema, RLS policies, and preview-mode boundaries are explicitly implemented.
