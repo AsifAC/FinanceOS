@@ -3,19 +3,20 @@
 ## Project
 
 - Supabase URL: https://zmbyqstmgtdbyvczuvki.supabase.co
-- Backend rebuild status: categories migration created locally; not applied live
+- Backend rebuild status: payment_methods migration applied live
 - Clean checkpoint: `e435950 chore: reset Supabase backend foundation`
 
 ## Current Status
 
-- Public tables: profiles and user_preferences are defined in a local migration only
-- Public RLS policies: profiles and user_preferences ownership policies are defined in a local migration only
+- Public tables: profiles, user_preferences, categories, and payment_methods exist live
+- Public RLS policies: profiles, user_preferences, categories, and payment_methods ownership policies exist live
 - Storage buckets: not created yet
 - Edge functions: not created yet
-- Public database functions/triggers: profile/preferences timestamp and new-user bootstrap functions are defined in a local migration only
+- Public database functions/triggers: profile/preferences timestamp, new-user bootstrap, default category bootstrap, payment_methods timestamp trigger, and atomic payment method default RPC exist live
 - Frontend screens remain on the existing local/mock data path
 - Supabase Auth service/provider exists locally and is not used for finance data yet
 - Categories schema/service/hooks exist locally and are not connected to UI pages yet
+- Payment methods schema/service/hooks exist locally and are not connected to UI pages yet
 
 ## Integration Order
 
@@ -37,12 +38,12 @@
 
 ## Planned Tables
 
-Tables are planned but not created yet:
+Tables are planned or staged but not connected to frontend finance workflows yet:
 
-- profiles
-- user_preferences
-- categories: local migration created, not applied live
-- payment_methods
+- profiles: live
+- user_preferences: live
+- categories: live
+- payment_methods: live
 - transactions
 - expected_transactions
 - savings_goals
@@ -258,3 +259,84 @@ Auth bootstrap and RLS runtime test status:
 Next planned step:
 
 - Step 5C should commit the Step 5/5B local files, then Step 6 can define the payment_methods schema.
+
+## Step 6 Payment Methods Schema - 2026-09-02
+
+Payment methods schema status:
+
+- Local migration file: `supabase/migrations/20260902212850_20260902212300_create_payment_methods.sql`.
+- The migration defines only `public.payment_methods`.
+- The migration has been applied to the live Supabase project.
+- Payment methods are user-owned rows.
+- Payment methods are not globally defaulted and are not created automatically for new users.
+- Users will add their own payment methods because these records represent private financial instruments.
+- No transactions, expected transactions, savings/debt tables, or storage buckets are created in this migration.
+
+Payment methods table model:
+
+- `public.payment_methods.user_id` references `auth.users(id)` and cascades on user deletion.
+- Payment method `type` is constrained to `cash`, `checking`, `savings`, `credit_card`, `debit_card`, `loan`, `investment`, `digital_wallet`, or `other`.
+- `nickname` is required, cannot be blank, and is unique per user.
+- `last4` is nullable but must be exactly four digits when present.
+- `color_theme` is nullable and must be either a `#RRGGBB` hex value or a short safe token when present.
+- A partial unique index allows at most one active default payment method per user.
+- `is_archived` supports hiding payment methods without deleting them.
+
+RLS ownership model:
+
+- RLS is enabled on `public.payment_methods`.
+- Users can select, insert, update, and delete only rows where `(select auth.uid()) = user_id`.
+- Insert and update policies use `with check` so users cannot create or reassign payment methods for another user.
+- No anonymous access policy exists for payment methods.
+
+Local integration status:
+
+- `src/types/supabase.ts` includes local types for `payment_methods` only in this step.
+- `src/services/paymentMethodService.ts` and `src/hooks/usePaymentMethods.ts` provide isolated payment method helpers.
+- `public.set_default_payment_method(target_payment_method_id uuid)` atomically unsets existing active defaults and sets the selected default for the authenticated owner.
+- `setDefaultPaymentMethod()` calls the database RPC instead of doing client-side multi-step updates.
+- Existing Settings/payment method UI remains connected to the local FinanceOS store, not Supabase.
+- Preview/mock payment methods remain separate from Supabase payment methods.
+
+Pending verification:
+
+- Step 4B/5B runtime Auth bootstrap testing remains pending because email signup hit validation/rate limiting and anonymous Auth is disabled.
+- Full authenticated user-context RLS testing remains pending until a test auth session can be created.
+
+Next planned step:
+
+- Step 6C should commit the Step 6/6B local files, then Step 7 can design the transactions schema.
+
+## Step 6B Apply And Verify Payment Methods - 2026-09-02
+
+Live apply status:
+
+- Applied the payment_methods migration live through Supabase MCP.
+- Live migration history records version `20260902212850` with name `20260902212300_create_payment_methods`.
+- The local migration filename was aligned to `supabase/migrations/20260902212850_20260902212300_create_payment_methods.sql` after apply to avoid migration history drift.
+- Verified `public.payment_methods` exists.
+- Verified RLS is enabled on `public.payment_methods`.
+- Verified owner-only select, insert, update, and delete policies exist for payment methods.
+- Verified `payment_methods_set_updated_at` exists and executes `public.set_updated_at()`.
+- Verified the partial unique index `payment_methods_one_default_per_user_idx` protects one active, non-archived default per user.
+- Verified `public.set_default_payment_method(target_payment_method_id uuid)` exists as `security invoker`.
+- Verified storage buckets remain empty.
+- Verified no transactions, expected_transactions, savings/debt, budget snapshot, archived budget, or notifications tables exist.
+- Security advisors report no lints.
+
+Atomic default RPC behavior:
+
+- The RPC requires `auth.uid()` to be present.
+- It verifies the target payment method belongs to the current authenticated user.
+- It rejects missing, non-owned, or archived targets.
+- It updates only rows where `user_id = auth.uid()`.
+- Execute permission is granted to `authenticated` and denied to `anon`.
+
+Runtime test status:
+
+- Runtime RPC/RLS testing remains pending until a test authenticated session can be created.
+- Runtime Auth bootstrap testing remains pending because recent signup attempts hit email validation/rate limiting and anonymous Auth is disabled.
+
+Recommended next step:
+
+- Step 6C should commit the Step 6/6B local files, then Step 7 can design the transactions schema.

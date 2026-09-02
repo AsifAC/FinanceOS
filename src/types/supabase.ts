@@ -51,6 +51,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      payment_methods: {
+        Row: {
+          id: string;
+          user_id: string;
+          nickname: string;
+          type: SupabasePaymentMethodType;
+          institution_name: string | null;
+          last4: string | null;
+          network: string | null;
+          color_theme: string | null;
+          is_default: boolean | null;
+          is_archived: boolean | null;
+          is_linked: boolean | null;
+          sort_order: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          nickname: string;
+          type: SupabasePaymentMethodType;
+          institution_name?: string | null;
+          last4?: string | null;
+          network?: string | null;
+          color_theme?: string | null;
+          is_default?: boolean | null;
+          is_archived?: boolean | null;
+          is_linked?: boolean | null;
+          sort_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          nickname?: string;
+          type?: SupabasePaymentMethodType;
+          institution_name?: string | null;
+          last4?: string | null;
+          network?: string | null;
+          color_theme?: string | null;
+          is_default?: boolean | null;
+          is_archived?: boolean | null;
+          is_linked?: boolean | null;
+          sort_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
@@ -143,18 +194,41 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      set_default_payment_method: {
+        Args: {
+          target_payment_method_id: string;
+        };
+        Returns: Database["public"]["Tables"]["payment_methods"]["Row"];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
 };
 
 export type SupabaseCategoryType = "income" | "expense" | "savings" | "debt";
+export type SupabasePaymentMethodType =
+  | "cash"
+  | "checking"
+  | "savings"
+  | "credit_card"
+  | "debit_card"
+  | "loan"
+  | "investment"
+  | "digital_wallet"
+  | "other";
 export type Category = Database["public"]["Tables"]["categories"]["Row"];
 export type CategoryInsert =
   Database["public"]["Tables"]["categories"]["Insert"];
 export type CategoryUpdate =
   Database["public"]["Tables"]["categories"]["Update"];
+export type PaymentMethod =
+  Database["public"]["Tables"]["payment_methods"]["Row"];
+export type PaymentMethodInsert =
+  Database["public"]["Tables"]["payment_methods"]["Insert"];
+export type PaymentMethodUpdate =
+  Database["public"]["Tables"]["payment_methods"]["Update"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
 export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
