@@ -3,16 +3,16 @@
 ## Project
 
 - Supabase URL: https://zmbyqstmgtdbyvczuvki.supabase.co
-- Backend rebuild status: Auth foundation added locally; no database schema created
+- Backend rebuild status: profiles and user_preferences migration created locally; not applied live
 - Clean checkpoint: `e435950 chore: reset Supabase backend foundation`
 
 ## Current Status
 
-- Public tables: not created yet
-- Public RLS policies: not created yet
+- Public tables: profiles and user_preferences are defined in a local migration only
+- Public RLS policies: profiles and user_preferences ownership policies are defined in a local migration only
 - Storage buckets: not created yet
 - Edge functions: not created yet
-- Public database functions/triggers: not created yet
+- Public database functions/triggers: profile/preferences timestamp and new-user bootstrap functions are defined in a local migration only
 - Frontend screens remain on the existing local/mock data path
 - Supabase Auth service/provider exists locally and is not used for finance data yet
 
@@ -107,3 +107,69 @@ Not created yet:
 Next planned step:
 
 - Create the profiles and user_preferences schema plan, then add migrations and RLS only after the ownership model is finalized.
+
+## Step 4 Profiles And User Preferences Schema
+
+Status:
+
+- Migration file: `supabase/migrations/20260902210238_create_profiles_and_user_preferences.sql`
+- Migration has been applied to the live Supabase project.
+- `public.profiles` is planned as the one-to-one profile record for `auth.users.id`.
+- `public.user_preferences` is planned as a one-to-one preferences record through `user_id`.
+- Local TypeScript table types were added for profiles and user_preferences only.
+- `src/services/profileService.ts` and `src/hooks/useProfile.ts` provide minimal current-user profile fetch/update helpers.
+- `src/services/userPreferencesService.ts` and `src/hooks/useUserPreferences.ts` provide minimal current-user preferences fetch/update helpers.
+
+RLS ownership model:
+
+- `profiles`: `auth.uid()` must equal `profiles.id`.
+- `user_preferences`: `auth.uid()` must equal `user_preferences.user_id`.
+- Authenticated users can select and update only their own rows.
+- No public insert policy is defined for either table.
+- Bootstrap row creation is handled by the auth user trigger.
+
+New user bootstrap behavior:
+
+- `public.handle_new_user()` runs after an auth user is inserted.
+- It inserts a profile row using `new.id`, `new.email`, and safe metadata fallbacks for `full_name`, `display_name`, and `avatar_url`.
+- It inserts a user_preferences row using `new.id` as `user_id`.
+- The function uses `security definer` with an explicit empty search path and schema-qualified table references.
+- Direct execute privileges are revoked from `public`, `anon`, and `authenticated`.
+
+Not created yet:
+
+- Finance tables
+- Categories table
+- Payment methods table
+- Transactions table
+- Expected transactions table
+- Savings or debt tables
+- Storage buckets
+- Finance storage policies
+- Finance data services wired to app pages
+
+## Step 4B Apply And Verify Profiles And Preferences
+
+Live apply status:
+
+- Applied live through Supabase MCP as `20260902210238_create_profiles_and_user_preferences`.
+- The local migration filename was aligned to the live migration version after apply to avoid migration history drift.
+- Verified `public.profiles` and `public.user_preferences` exist.
+- Verified RLS is enabled on both tables.
+- Verified expected select/update ownership policies exist on both tables.
+- Verified `public.set_updated_at()` and `public.handle_new_user()` exist.
+- Verified `auth.users` has the `on_auth_user_created` trigger.
+- Verified storage buckets remain empty.
+- Verified no finance tables exist.
+- Security advisors report no lints.
+
+Auth bootstrap and RLS runtime test status:
+
+- Email signup testing is pending because Supabase returned an email send rate limit.
+- Anonymous signup testing is unavailable because anonymous sign-ins are disabled.
+- No test Auth users, profiles rows, or user_preferences rows were created during the attempted tests.
+- Full authenticated user-context RLS testing is pending until a normal signup/session can be created.
+
+Next planned step:
+
+- Step 4C should commit the local Step 4/4B files and note that live Auth bootstrap/RLS user-context verification remains pending.

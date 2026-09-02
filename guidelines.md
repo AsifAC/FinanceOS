@@ -2600,3 +2600,80 @@ Backend safety checkpoint:
 Recommended next step:
 
 - Step 4 should define and implement the `profiles` plus `user_preferences` schema with ownership/RLS rules before any finance data tables are introduced.
+
+## Supabase Backend Restart - Step 4 Profiles And Preferences Schema - 2026-09-02
+
+Schema foundation status:
+
+- Local migration file: `supabase/migrations/20260902210238_create_profiles_and_user_preferences.sql`.
+- The migration defines only `public.profiles` and `public.user_preferences`.
+- The migration has been applied to the live Supabase project.
+- No finance tables are defined in this migration.
+- No storage buckets are defined in this migration.
+
+Profiles table model:
+
+- `public.profiles.id` equals `auth.users.id` and cascades on user deletion.
+- Profiles store only basic identity/profile fields: email, full name, display name, avatar URL, timezone, currency, onboarding status, and timestamps.
+- Profiles must not store passwords or sensitive financial data.
+
+User preferences table model:
+
+- `public.user_preferences.user_id` references `auth.users.id` and is unique.
+- Preferences store UI/account defaults only: theme, accent color, default view, week start, month start day, number format, currency, timezone, preview mode flag, notifications flag, and timestamps.
+- Preferences must not be treated as authoritative finance records.
+
+RLS ownership model:
+
+- RLS is enabled on both tables.
+- `profiles` policies require `(select auth.uid()) = id`.
+- `user_preferences` policies require `(select auth.uid()) = user_id`.
+- Authenticated users can select and update only their own profile/preferences rows.
+- There are no public insert policies; row creation is handled by the new-user bootstrap trigger.
+- Update policies use both `using` and `with check`.
+
+New user bootstrap behavior:
+
+- `public.handle_new_user()` inserts a profile row and a user_preferences row after a new auth user is created.
+- It uses `new.id`, `new.email`, and safe values from `new.raw_user_meta_data` for profile display fields.
+- It is `security definer` with an explicit empty `search_path` and schema-qualified table references.
+- Direct execute privileges are revoked from `public`, `anon`, and `authenticated`.
+
+Local integration status:
+
+- `src/types/supabase.ts` includes local types for `profiles` and `user_preferences` only.
+- `src/services/profileService.ts` and `src/hooks/useProfile.ts` provide minimal current-user profile fetch/update helpers.
+- `src/services/userPreferencesService.ts` and `src/hooks/useUserPreferences.ts` provide minimal current-user preferences fetch/update helpers.
+- Dashboard, Reports, Savings, Debt, Transactions, Expected Transactions, Archived Budgets, and Notifications remain disconnected from Supabase finance data.
+- Existing local settings/theme behavior is not overwritten by Supabase preferences yet.
+- Preview/mock mode remains separate from Supabase auth and preferences.
+
+## Supabase Backend Restart - Step 4B Apply And Verify Profiles And Preferences - 2026-09-02
+
+Live apply status:
+
+- Applied the profiles/user_preferences migration live through Supabase MCP.
+- Live migration history records `20260902210238_create_profiles_and_user_preferences`.
+- The local migration filename was aligned to `supabase/migrations/20260902210238_create_profiles_and_user_preferences.sql` after apply to avoid migration history drift.
+- Verified `public.profiles` exists.
+- Verified `public.user_preferences` exists.
+- Verified RLS is enabled on both tables.
+- Verified owner-only select/update policies exist for both tables.
+- Verified `public.set_updated_at()` exists with an explicit empty `search_path`.
+- Verified `public.handle_new_user()` exists as `security definer` with an explicit empty `search_path`.
+- Verified the `on_auth_user_created` trigger exists on `auth.users`.
+- Verified storage buckets remain empty.
+- Verified no finance tables exist.
+- Security advisors report no lints.
+- Performance advisors report unused index info for the brand-new indexes, expected before app traffic.
+
+Bootstrap and RLS runtime test status:
+
+- Email signup bootstrap testing is pending because Supabase returned an email send rate limit.
+- Anonymous Auth testing is unavailable because anonymous sign-ins are disabled.
+- No test Auth users, profile rows, or user_preferences rows were created by the attempted tests.
+- Full authenticated user-context RLS testing remains pending until a normal signup/session can be created.
+
+Recommended next step:
+
+- Step 4C should commit the Step 4/4B local files, then Step 5 can define the categories schema after bootstrap/RLS runtime verification is revisited.
