@@ -2838,3 +2838,21 @@ Runtime test status:
 Recommended next step:
 
 - Step 6C should commit the Step 6/6B local files, then Step 7 can design the transactions schema.
+
+
+## Supabase Backend Restart - Step 7 Actual Transactions - 2026-09-16
+
+- Implemented locally only: `supabase/migrations/20260909161607_create_transactions.sql`, transaction types, `src/services/transactionService.ts` and `src/hooks/useTransactions.ts`. Recovered and completed the existing draft; did not create a duplicate migration.
+- Migration has NOT been applied live because MCP OAuth is unavailable due to unsupported scopes. No MCP/login/remote SQL attempted; filename retained and changes left uncommitted.
+- Actual transactions only: income, expense, savings contributions and debt payments. All amounts are positive numeric(14,2); type determines financial direction. Zero, negative and NaN amounts are rejected; title must not be blank.
+- `transaction_date` is the source of month/year. No redundant month/year columns; service queries use first-of-month inclusive/next-month exclusive boundaries, with month numbered 1–12 (frontend uses 0–11).
+- Nullable category and payment-method FKs use ON DELETE SET NULL, preserving historical records. Archiving does not clear links.
+- BEFORE INSERT OR UPDATE `validate_transaction_ownership()` rejects missing/cross-user references. SECURITY INVOKER, empty search_path, fully qualified tables, no callable client RPC. Retained composite owner FKs also protect against parent ownership changes/concurrency; no ownership cascades.
+- RLS grants authenticated CRUD only for `auth.uid() = user_id`, with INSERT/UPDATE WITH CHECK. No anon/public access. Service gets Auth user_id and allowlists write fields at runtime; callers cannot set ownership, IDs or timestamps.
+- `transactions_set_updated_at` reuses `public.set_updated_at()`. Indexes cover owner/date, owner/type and the two references.
+- Frontend still uses name/category-name/local IDs/status/fixed-expense fields. Backend uses title/owned UUID references and actual-only rows. Pending fixed expenses are excluded from local actual totals, while other pending types are counted; resolve this before any UI adapter. Description/provenance/recurring metadata have no direct current frontend equivalent.
+- Keep Preview Mode, batch preview queues and localStorage completely separate: no upload, migration, synchronization, array merging or Dashboard integration. The new hook is not mounted by any page; future preview callers must disable it.
+- Recurring flags/group ID are foundation only; recurring engine, automation and templates are deferred. expected_transactions is Step 8. No savings/debt schema or storage work.
+- Offline service tests use a mocked client only. Runtime Auth/RLS, migration execution, trigger/FK behavior and hook lifecycle integration testing remain deferred to the validation phase.
+- Validation: 6 offline service tests passed; typecheck/build/diff checks passed. Lint unavailable (no lint script). Vite retains its large-chunk warning; Node type stripping is experimental; Git warns about guidelines.md line-ending normalization.
+- See `docs/supabase-backend-plan.md` Step 7 for the full frontend audit, schema/security rationale, service semantics and Step 7B validation matrix. Review/test locally before separately authorizing any live application.

@@ -9,6 +9,73 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: SupabaseTransactionType;
+          amount: number;
+          title: string;
+          description: string | null;
+          category_id: string | null;
+          payment_method_id: string | null;
+          transaction_date: string;
+          notes: string | null;
+          is_recurring: boolean;
+          recurring_group_id: string | null;
+          source: SupabaseTransactionSource;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: SupabaseTransactionType;
+          amount: number;
+          title: string;
+          description?: string | null;
+          category_id?: string | null;
+          payment_method_id?: string | null;
+          transaction_date: string;
+          notes?: string | null;
+          is_recurring?: boolean;
+          recurring_group_id?: string | null;
+          source?: SupabaseTransactionSource;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["transactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "transactions_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_payment_method_id_fkey";
+            columns: ["payment_method_id"];
+            isOneToOne: false;
+            referencedRelation: "payment_methods";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_category_owner_fk";
+            columns: ["user_id", "category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["user_id", "id"];
+          },
+          {
+            foreignKeyName: "transactions_payment_method_owner_fk";
+            columns: ["user_id", "payment_method_id"];
+            isOneToOne: false;
+            referencedRelation: "payment_methods";
+            referencedColumns: ["user_id", "id"];
+          },
+        ];
+      };
       categories: {
         Row: {
           id: string;
@@ -208,6 +275,11 @@ export type Database = {
 };
 
 export type SupabaseCategoryType = "income" | "expense" | "savings" | "debt";
+export type SupabaseTransactionType = "income" | "expense" | "savings" | "debt";
+export type SupabaseTransactionSource = "manual" | "recurring" | "import" | "migration";
+export type Transaction = Database["public"]["Tables"]["transactions"]["Row"];
+export type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
+export type TransactionUpdate = Database["public"]["Tables"]["transactions"]["Update"];
 export type SupabasePaymentMethodType =
   | "cash"
   | "checking"

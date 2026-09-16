@@ -3,7 +3,7 @@
 ## Project
 
 - Supabase URL: https://zmbyqstmgtdbyvczuvki.supabase.co
-- Backend rebuild status: payment_methods migration applied live
+- Backend rebuild status: transactions schema staged locally; payment_methods migration applied live
 - Clean checkpoint: `e435950 chore: reset Supabase backend foundation`
 
 ## Current Status
@@ -17,6 +17,7 @@
 - Supabase Auth service/provider exists locally and is not used for finance data yet
 - Categories schema/service/hooks exist locally and are not connected to UI pages yet
 - Payment methods schema/service/hooks exist locally and are not connected to UI pages yet
+- Step 7 actual transactions migration/types/service/hook are complete locally, unapplied and disconnected from UI pages
 
 ## Integration Order
 
@@ -44,7 +45,7 @@ Tables are planned or staged but not connected to frontend finance workflows yet
 - user_preferences: live
 - categories: live
 - payment_methods: live
-- transactions
+- transactions: local migration staged, not applied live
 - expected_transactions
 - savings_goals
 - debts
@@ -340,3 +341,72 @@ Runtime test status:
 Recommended next step:
 
 - Step 6C should commit the Step 6/6B local files, then Step 7 can design the transactions schema.
+
+## Step 7 Actual Transactions — Local Only — 2026-09-16
+
+Status and recovery:
+
+- Reused `supabase/migrations/20260909161607_create_transactions.sql`; no second transactions migration was created.
+- Recovered the untracked SQL and the partial Step 7 backend-plan notes. No transaction service, hook, or database types existed.
+- Preserved applicable schema, RLS, timestamp and ownership constraints. Removed draft pending/fixed-expense columns, the extra `system` source and speculative indexes to match the actual-only scope.
+- Transactions migration, TypeScript types, service and hook are implemented locally. The migration has NOT been applied live because Supabase MCP is unavailable due to unsupported OAuth scopes.
+- No MCP calls, OAuth attempts, remote SQL, migration renaming or commits belong to this step. Earlier live-state statements in this document are historical and were not reverified.
+
+Frontend audit and integration mismatches:
+
+- Inspected `src/app/data/data.ts`, `src/app/lib/financeStore.tsx`, AddTransaction, IncomeTracker, ExpenseTracker, Categories, Settings and `src/mock/mockFinanceData.ts`.
+- Income, expenses, savings contributions and debt payments use the same local Transaction model. Amounts are positive; type controls direction in totals.
+- Local shape: `id, name, amount, type, category, date, status`, plus optional `expenseKind, notes, dueDate, isFixed, paymentMethodId`.
+- Batch-entry forms collect name/source/merchant, positive amount, category name, ISO date, status, notes and a local payment method ID. Draft preview queues commit to the local store only.
+- Backend `title` maps to local `name`; `transaction_date` maps to `date`; `notes` retains its meaning. Nullable `description` has no distinct frontend source yet.
+- Local categories are display-name strings (including Uncategorized); backend uses nullable owned UUID references. Payment method IDs are also local strings today. A future adapter must resolve real owned IDs, never reuse local/mock IDs.
+- Local IDs use client-generated strings; mock IDs use `mock-*`; pending payment-plan IDs use `payment-plan:*`. Backend IDs are server-generated UUIDs.
+- The form defaults to pending. Actual totals exclude pending fixed expenses, but include other transactions regardless of pending/paid/cleared status. Backend rows represent actual events only and have no status, due date or fixed-expense classification. Resolve this semantic mismatch before UI integration; never bulk-copy the local array.
+- Expected monthly amounts and payment plans are separate local models. Recurring frequency belongs to PaymentPlan; actual local transactions have no recurring-series metadata.
+- Frontend month indexes are 0–11 and activeYear is a string. The service accepts numeric year and month 1–12. Dates are calendar strings, not timestamps.
+- There is no transaction provenance/import field. The form's source label means a display name, not backend provenance. Settings import/export controls are placeholders; no importer was added.
+- Full local FinanceState remains under `financeos:app-data:v1`. Preview Mode uses a separate reducer with `mockFinanceData` and the `financeos:dev-preview-enabled` toggle.
+
+Schema and financial conventions:
+
+- UUID primary key; required `user_id` references `auth.users(id) ON DELETE CASCADE`.
+- Required type, positive `numeric(14,2)` amount, nonblank title and `transaction_date date`. Allowed types: income, expense, savings, debt. Negative/zero and numeric NaN amounts are rejected; expenses/debt remain positive.
+- Type determines financial direction. No persisted month/year: `transaction_date` is authoritative.
+- Nullable description, notes, category_id, payment_method_id and recurring_group_id; description and notes remain flexible text.
+- Source defaults to manual and allows only manual, recurring, import, migration. No import/migration workflow is implemented.
+- is_recurring defaults false. created_at/updated_at are non-null timestamps defaulting to now().
+- `transactions_set_updated_at` reuses `public.set_updated_at()`; no duplicate helper.
+
+Ownership, foreign keys and RLS:
+
+- Nullable single-column category/payment-method FKs reference their respective public tables and use ON DELETE SET NULL. Historical transactions survive parent deletion. Archiving does not clear references.
+- `public.validate_transaction_ownership()` runs BEFORE INSERT OR UPDATE. Every non-null category/payment reference must exist and have user_id equal to NEW.user_id, otherwise a clear exception is raised.
+- The helper is SECURITY INVOKER with an empty search_path and fully qualified tables. RLS-hidden and missing references both fail without disclosing another user's records. It is a trigger-only function, with direct execution revoked; no client RPC typing is needed.
+- Retained composite owner FKs and parent (user_id, id) unique constraints from the draft as additional protection against concurrent or privileged parent ownership changes. Removed ON UPDATE CASCADE so a parent edit cannot transfer transactions. Composite deletes clear only the reference column, never user_id.
+- Both FK relationship paths are reflected in types. Future embedded PostgREST joins must name the intended FK to avoid ambiguous relationships.
+- Enabled RLS. Authenticated SELECT/DELETE use `(select auth.uid()) = user_id`; INSERT uses WITH CHECK; UPDATE uses both USING and WITH CHECK. No anonymous policy/access.
+- Explicitly revoke public/anon/authenticated table privileges before granting authenticated SELECT/INSERT/UPDATE/DELETE only (no TRUNCATE).
+- Four transaction indexes: (user_id, transaction_date DESC), (user_id, type), category_id, payment_method_id. Parent unique constraints also create supporting unique indexes.
+- Static security review found no remaining high-confidence Step 7 issue: no unsafe SECURITY DEFINER, service-role use, destructive data SQL, credentials, or caller-controlled identity in service payloads.
+
+Local service, hook and types:
+
+- `src/services/transactionService.ts` provides fetchTransactions, fetchTransactionById, fetchTransactionsByType, fetchTransactionsByDateRange, fetchTransactionsForMonth, createTransaction, updateTransaction and deleteTransaction.
+- Every database operation checks the existing client and obtains the current user via Auth.getUser(). Queries explicitly filter by owner. Insert attaches Auth user_id; runtime field allowlisting prevents updates to user_id, id or server timestamps.
+- Typed success/failure results use fixed sanitized messages, including thrown network/Auth failures. No raw tokens, errors or server details leave the service.
+- Lists are ordered by date then ID descending and fetched in 500-row pages. Offset pagination is not a database snapshot during concurrent edits; revisit cursor/snapshot loading for future high-volume UI. A server row limit below 500 would also require matching this page size.
+- fetchTransactionById returns null when absent/inaccessible; update/delete report not_found. Date-range endpoints are inclusive.
+- Month queries use first day inclusive and next month's first day exclusive, including December rollover, without timezone conversion. Month 1–12 and year 1–9998 are validated.
+- `src/hooks/useTransactions.ts` exposes transactions, isLoading, error, refresh and create/update/delete. It refreshes after successful writes, clears/masks previous-account state, ignores obsolete results after account changes/unmount, and tracks concurrent loading.
+- The hook is isolated and unmounted by all existing pages. It supports `enabled: false`; future Preview Mode integration must disable it.
+- `src/types/supabase.ts` adds SupabaseTransactionType, SupabaseTransactionSource, Transaction, TransactionInsert, TransactionUpdate and the transactions table/relationship definitions only.
+
+Scope and validation:
+
+- Preview/mock/localStorage data is untouched: no migration, synchronization, seeding, array merging, dashboard replacement or automatic guest upload.
+- Recurring engine, templates, cron, Edge Functions and automatic generation are deferred.
+- expected_transactions schema/types/services/hooks are deferred to Step 8. No savings/debt tables or storage work.
+- Offline service tests: `node --test tests/transactionService.test.mjs` (Node 24) cover identity spoofing, owner filters, missing client/session, safe errors, amount/date validation, month boundaries and pagination. These mock the client and never connect to Supabase.
+- Validation results: all 6 offline tests passed; `npm run typecheck`, `npm run build` and `git diff --check` passed. New untracked files were also whitespace-checked. Lint unavailable (no lint script). Build retains the large-chunk warning; Node reports its experimental type-stripping API; Git reports existing CRLF-to-LF normalization for guidelines.md.
+- Runtime Auth/RLS, trigger/FK delete behavior and migration execution testing remain deferred to a later validation phase; static checks and mocked tests do not prove live enforcement.
+- Step 7B recommendation: review this local diff and validate in an explicitly authorized local/test database using two authenticated users plus anon. Exercise CRUD isolation, mismatched references, ownership reassignment, null references, parent deletion/archive, timestamps and date boundaries. Verify the existing Auth bootstrap separately. Live application requires a separate explicit instruction after access is restored; keep this filename and do not mark it applied now.
