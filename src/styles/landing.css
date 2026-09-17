@@ -59,6 +59,19 @@
     pointer-events: none;
   }
 
+  .financeos-landing .financeos-landing-header .landing-btn {
+    border-radius: 9px;
+    box-shadow: none;
+  }
+
+  @media (max-width: 680px) {
+    .financeos-landing .financeos-landing-header { align-items: center; gap: 8px; }
+    .financeos-landing-header .financeos-landing-brand { gap: 8px; font-size: 14px; }
+    .financeos-landing-header .financeos-landing-logo { width: 32px; height: 32px; border-radius: 10px; box-shadow: none; }
+    .financeos-landing .financeos-landing-header .landing-btn { min-height: 44px; padding: 10px 13px; font-size: 12px; }
+    .financeos-landing-header .financeos-landing-actions { flex-wrap: nowrap; }
+  }
+
   .financeos-landing-brand,
   .financeos-landing-actions,
   .financeos-landing-cta-row,

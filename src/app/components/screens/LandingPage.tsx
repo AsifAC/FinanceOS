@@ -338,17 +338,15 @@ function LandingFinalCTA({ ctas }: { ctas: LandingCtas }) {
 
 export function LandingPage() {
   const { state } = useFinanceData();
-  const isAuthenticated = state.setupCompleted;
+  const hasLocalWorkspace = state.setupCompleted;
   const ctas: LandingCtas = {
-    primary: isAuthenticated
+    primary: hasLocalWorkspace
       ? { label: "Open Dashboard", to: "/dashboard" }
       : { label: "Get started", to: "/setup" },
-    secondary: isAuthenticated
+    secondary: hasLocalWorkspace
       ? { label: "Continue Budgeting", to: "/start" }
-      : { label: "Log in", to: "/start" },
+      : { label: "Log in", to: "/auth/login" },
   };
-  const headerPrimary = isAuthenticated ? ctas.primary : { label: "Sign up", to: "/setup" };
-  const headerSecondary = isAuthenticated ? ctas.secondary : { label: "Log in", to: "/start" };
 
   return (
     <div className="financeos-landing">
@@ -360,8 +358,8 @@ export function LandingPage() {
           <span>FinanceOS</span>
         </Link>
         <nav className="financeos-landing-actions" aria-label="Public navigation">
-          <LandingButton to={headerSecondary.to} variant="outline">{headerSecondary.label}</LandingButton>
-          <LandingButton to={headerPrimary.to} variant="primary">{headerPrimary.label}</LandingButton>
+          <LandingButton to="/auth/login" variant="outline">Login</LandingButton>
+          <LandingButton to="/auth/signup" variant="primary">Sign up</LandingButton>
         </nav>
       </header>
 

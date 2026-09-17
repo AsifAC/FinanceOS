@@ -49,11 +49,36 @@ function supabaseNotConfigured<T>(): AuthServiceResult<T> {
 }
 
 function mapAuthError(error: AuthError): AuthServiceError {
+  const messages: Record<string, string> = {
+    invalid_credentials: "Email or password is incorrect.",
+    email_not_confirmed: "Confirm your email address before logging in.",
+    user_already_exists: "An account with this email may already exist.",
+    email_exists: "An account with this email may already exist.",
+    weak_password: "Choose a stronger password that meets the account security requirements.",
+    email_address_invalid: "Enter a valid email address.",
+    email_address_not_authorized: "This email address cannot be used to sign up right now.",
+    signup_disabled: "New accounts are temporarily unavailable. Please try again later.",
+    over_email_send_rate_limit: "Too many emails requested. Please wait before trying again.",
+    over_request_rate_limit: "Too many attempts. Please wait before trying again.",
+  };
   return {
     code: error.code,
-    message: error.message || "Authentication request failed.",
+    message: messages[error.code] ?? (error.status === 429
+      ? "Too many attempts. Please wait before trying again."
+      : error.status === 0 || error.status >= 500
+        ? "We couldn't connect right now. Please try again."
+        : "We couldn't complete your request. Please check your details and try again."),
     status: error.status,
   };
+}
+
+// Keep network failures from leaving AuthProvider in a permanent loading state.
+async function safely<T>(request: () => Promise<AuthServiceResult<T>>): Promise<AuthServiceResult<T>> {
+  try {
+    return await request();
+  } catch {
+    return failure({ code: "connection_error", message: "We couldn't connect right now. Please try again." });
+  }
 }
 
 export async function getCurrentSession(): Promise<
@@ -61,33 +86,43 @@ export async function getCurrentSession(): Promise<
 > {
   if (!supabase) return supabaseNotConfigured<Session | null>();
 
-  const { data, error } = await supabase.auth.getSession();
-  if (error) return failure(mapAuthError(error));
+  return safely(async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) return failure(mapAuthError(error));
 
-  return success(data.session);
+    return success(data.session);
+  });
 }
 
 export async function getCurrentUser(): Promise<AuthServiceResult<User | null>> {
   if (!supabase) return supabaseNotConfigured<User | null>();
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return failure(mapAuthError(error));
+  return safely(async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return failure(mapAuthError(error));
 
-  return success(data.user);
+    return success(data.user);
+  });
 }
 
 export async function signUpWithEmail(
   email: string,
   password: string,
+  fullName?: string,
 ): Promise<AuthServiceResult<EmailAuthResult>> {
   if (!supabase) return supabaseNotConfigured<EmailAuthResult>();
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return failure(mapAuthError(error));
+  return safely(async () => {
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(), password,
+      options: fullName ? { data: { full_name: fullName.trim() } } : undefined,
+    });
+    if (error) return failure(mapAuthError(error));
 
-  return success({
-    session: data.session,
-    user: data.user,
+    return success({
+      session: data.session,
+      user: data.user,
+    });
   });
 }
 
@@ -97,25 +132,29 @@ export async function signInWithEmail(
 ): Promise<AuthServiceResult<EmailAuthResult>> {
   if (!supabase) return supabaseNotConfigured<EmailAuthResult>();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error) return failure(mapAuthError(error));
+  return safely(async () => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) return failure(mapAuthError(error));
 
-  return success({
-    session: data.session,
-    user: data.user,
+    return success({
+      session: data.session,
+      user: data.user,
+    });
   });
 }
 
 export async function signOut(): Promise<AuthServiceResult<void>> {
   if (!supabase) return success(undefined);
 
-  const { error } = await supabase.auth.signOut();
-  if (error) return failure(mapAuthError(error));
+  return safely(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) return failure(mapAuthError(error));
 
-  return success(undefined);
+    return success(undefined);
+  });
 }
 
 export function onAuthStateChange(

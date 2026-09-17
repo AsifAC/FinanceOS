@@ -10,7 +10,7 @@ import { patchSonnerToast } from "../../lib/notifications";
 export function AppShell() {
   const location = useLocation();
 
-  if (location.pathname === "/") {
+  if (location.pathname === "/" || location.pathname.startsWith("/auth/")) {
     return <Outlet />;
   }
 

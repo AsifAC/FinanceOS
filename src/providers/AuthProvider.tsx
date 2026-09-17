@@ -31,6 +31,7 @@ export type AuthContextValue = AuthState & {
   signUp: (
     email: string,
     password: string,
+    fullName?: string,
   ) => Promise<AuthServiceResult<EmailAuthResult>>;
   signIn: (
     email: string,
@@ -138,10 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName?: string) => {
     setAuthState((current) => ({ ...current, isLoading: true, error: null }));
 
-    const result = await signUpWithEmail(email, password);
+    const result = await signUpWithEmail(email, password, fullName);
     if (!result.ok) {
       setAuthState((current) => ({
         ...current,

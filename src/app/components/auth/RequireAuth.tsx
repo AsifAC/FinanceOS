@@ -9,7 +9,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (isLoading) return null;
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace state={{ from: location }} />;
+    return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;
