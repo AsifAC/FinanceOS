@@ -1,7 +1,9 @@
 .financeos-auth {
   --auth-lime: #c6ff00;
   --auth-text: #f8fafc;
-  --auth-muted: #b8c0b3;
+  --auth-muted: #a8b3a3;
+  --auth-panel: #080a08;
+  --auth-border: rgb(255 255 255 / 0.12);
   color-scheme: dark;
   display: grid;
   grid-template-columns: 51% 49%;
@@ -25,8 +27,8 @@
   min-height: 100svh;
   overflow: hidden;
   padding: 42px clamp(30px, 4vw, 72px) 30px;
-  border-right: 1px solid rgb(255 255 255 / 0.12);
-  background: #030403;
+  border-right: 1px solid var(--auth-border);
+  background: var(--auth-panel);
 }
 .auth-brand { display: inline-flex; align-items: center; align-self: flex-start; gap: 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.6px; z-index: 1; }
 .auth-brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--auth-lime); color: #050505; }
@@ -69,12 +71,12 @@
 .auth-field { min-width: 0; }
 .auth-field label { display: block; margin-bottom: 9px; font-size: 12px; font-weight: 500; color: #eef2e9; }
 .auth-input-wrap { position: relative; }
-.auth-field input { display: block; width: 100%; height: 52px; padding: 0 15px; border: 1px solid #2a3038; border-radius: 9px; background: #101318; color: #f8fafc; font-size: 16px; line-height: normal; transition: border-color 180ms ease; }
+.auth-field input { display: block; width: 100%; height: 52px; padding: 0 15px; border: 1px solid var(--auth-border); border-radius: 9px; background: var(--auth-panel); color: var(--auth-text); font-size: 16px; line-height: normal; transition: border-color 180ms ease; }
 .auth-input-wrap:has(.auth-reveal) input { padding-right: 52px; }
 .auth-field input::placeholder { color: #8b94a3; font-size: 14px; opacity: 1; }
 .auth-field input:focus { border-color: var(--auth-lime); }
 .auth-field input[aria-invalid="true"] { border-color: #f9a8a8; }
-.auth-field input:-webkit-autofill { -webkit-text-fill-color: #f8fafc; box-shadow: 0 0 0 1000px #101318 inset; caret-color: #f8fafc; }
+.auth-field input:-webkit-autofill { -webkit-text-fill-color: #f8fafc; box-shadow: 0 0 0 1000px var(--auth-panel) inset; caret-color: #f8fafc; }
 .auth-reveal { position: absolute; inset: 4px 4px 4px auto; width: 44px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: #b8c0b3; cursor: pointer; }
 .auth-reveal:hover { color: #f8fafc; background: rgb(255 255 255 / 0.04); }
 .financeos-auth .auth-field-hint, .financeos-auth .auth-field-error { margin-top: 7px; font-size: 12px; line-height: 1.5; }
@@ -118,6 +120,7 @@
   .auth-brand-panel { min-height: 0; height: 210px; padding: 26px 32px; border-right: 0; border-bottom: 1px solid rgb(255 255 255 / 0.12); }
   .auth-cash-field { inset: 40px 2% -20px 55%; }
   .auth-cash-bar:nth-child(even) { display: none; animation: none; }
+  .auth-cash-bar:nth-child(even)::after { animation: none; }
   .auth-cash-bar { width: 3px; }
   .auth-brand-copy { width: 52%; padding-top: 0; margin-top: auto; }
   .auth-brand-copy .auth-eyebrow, .auth-brand-copy > p:last-child, .auth-brand-footer { display: none; }

@@ -19,7 +19,7 @@ function AuthField({ label, error, hint, ...props }: InputHTMLAttributes<HTMLInp
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${props.id}-error` : hint ? `${props.id}-hint` : undefined} />
         {password && <button type="button" className="auth-reveal" disabled={props.disabled}
-          aria-label={`${revealed ? "Hide" : "Show"} ${label.toLowerCase()}`} aria-pressed={revealed}
+          aria-label={`${revealed ? "Hide" : "Show"} ${label.toLowerCase()}`} aria-pressed={revealed} aria-controls={props.id}
           onClick={() => setRevealed((value) => !value)}>
           {revealed ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
         </button>}
@@ -77,6 +77,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       const result = signup ? await signUp(email, password, fullName) : await signIn(email, password);
       if (!mounted.current) return;
       if (!result.ok) {
+        if (result.error.code === "weak_password") {
+          setErrors({ password: result.error.message });
+        }
         setError(result.error.code === "supabase_not_configured"
           ? "Account access is temporarily unavailable. Please try again later."
           : result.error.message);
@@ -125,6 +128,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {signup && <AuthField id="auth-confirmation" name="confirmation" label="Confirm password" type="password" autoComplete="new-password" required placeholder="Re-enter your password" error={errors.confirmation} />}
         </fieldset>
         <div aria-live="polite" aria-atomic="true">{error && <p className="auth-request-error">{error}</p>}</div>
+        <p className="auth-sr-only" role="status" aria-live="polite">
+          {busy ? signup ? "Creating your account. Please wait." : "Logging in. Please wait." : ""}
+        </p>
         <button className="auth-submit" type="submit" disabled={busy}>
           {busy ? signup ? "Creating account…" : "Logging in…" : signup ? "Create account" : "Log in"}
           {!busy && <ArrowRight size={18} aria-hidden="true" />}

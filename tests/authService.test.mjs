@@ -56,3 +56,20 @@ test("unconfigured Auth returns a typed failure", async () => {
   const service = await load(null);
   assert.equal((await service.signInWithEmail("test@example.com", "password")).error.code, "supabase_not_configured");
 });
+
+test("password policy feedback uses only known structured reasons", async () => {
+  const service = await load({ signUp: async () => ({ data: null, error: {
+    code: "weak_password", status: 422, message: "private server detail",
+    reasons: ["length", "pwned", "length", "private reason", "__proto__"],
+  } }) });
+  const result = await service.signUpWithEmail("test@example.com", "password");
+  assert.equal(result.ok, false);
+  assert.equal(result.error.message, "Use a longer password. This password has appeared in a data breach. Choose a different, unique password.");
+  assert.equal(result.error.code, "weak_password");
+});
+
+test("signup preserves an immediate authenticated session", async () => {
+  const session = { user: { id: "signed-up" } };
+  const service = await load({ signUp: async () => ({ data: { session, user: session.user }, error: null }) });
+  assert.deepEqual((await service.signUpWithEmail("test@example.com", "password")).data.session, session);
+});

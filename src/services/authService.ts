@@ -49,6 +49,17 @@ function supabaseNotConfigured<T>(): AuthServiceResult<T> {
 }
 
 function mapAuthError(error: AuthError): AuthServiceError {
+  // Use structured policy reasons, never raw server text or a guessed project policy.
+  if (error.code === "weak_password" && "reasons" in error && Array.isArray(error.reasons)) {
+    const guidance: Record<string, string> = {
+      length: "Use a longer password.",
+      characters: "Include the character types required by your account's password policy.",
+      pwned: "This password has appeared in a data breach. Choose a different, unique password.",
+    };
+    const messages = [...new Set(error.reasons.filter((reason): reason is string =>
+      typeof reason === "string" && Object.hasOwn(guidance, reason)).map(reason => guidance[reason]))];
+    if (messages.length) return { code: error.code, status: error.status, message: messages.join(" ") };
+  }
   const messages: Record<string, string> = {
     invalid_credentials: "Email or password is incorrect.",
     email_not_confirmed: "Confirm your email address before logging in.",
