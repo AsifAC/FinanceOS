@@ -3,12 +3,12 @@
 ## Project
 
 - Supabase URL: https://zmbyqstmgtdbyvczuvki.supabase.co
-- Backend rebuild status: transactions schema staged locally; payment_methods migration applied live
+- Backend rebuild status: Step 7 transactions migration deployed; verified in live migration history on 2026-09-20
 - Clean checkpoint: `e435950 chore: reset Supabase backend foundation`
 
 ## Current Status
 
-- Public tables: profiles, user_preferences, categories, and payment_methods exist live
+- Public tables: profiles, user_preferences, categories, payment_methods, and transactions exist live; RLS is enabled on all five (read-only MCP verification, 2026-09-20)
 - Public RLS policies: profiles, user_preferences, categories, and payment_methods ownership policies exist live
 - Storage buckets: not created yet
 - Edge functions: not created yet
@@ -17,7 +17,8 @@
 - Supabase Auth service/provider exists locally and is not used for finance data yet
 - Categories schema/service/hooks exist locally and are not connected to UI pages yet
 - Payment methods schema/service/hooks exist locally and are not connected to UI pages yet
-- Step 7 actual transactions migration/types/service/hook are complete locally, unapplied and disconnected from UI pages
+- Step 7 actual transactions migration is deployed; types/service/hook are implemented locally, and frontend transaction integration has not started
+- All four local migration versions and names match live migration history; full schema equivalence is not yet verified, and authenticated runtime/RLS testing remains pending
 
 ## Integration Order
 
@@ -45,7 +46,7 @@ Tables are planned or staged but not connected to frontend finance workflows yet
 - user_preferences: live
 - categories: live
 - payment_methods: live
-- transactions: local migration staged, not applied live
+- transactions: live; migration deployment verified, full schema equivalence and authenticated runtime/RLS testing pending
 - expected_transactions
 - savings_goals
 - debts
@@ -79,6 +80,8 @@ Storage buckets are planned but not created yet:
 - Mock/preview mode must remain separate from real Supabase data.
 - Preview mode state must not write to live Supabase tables or storage.
 - Real Supabase reads/writes should be introduced one workflow at a time after its schema, RLS policies, tests, and rollback path are documented.
+
+The step notes below record earlier implementation checkpoints. Their table inventories and next-step recommendations are historical; Current Status and the Step 7 deployment verification describe the latest verified state.
 
 ## Step 3 Auth Foundation
 
@@ -342,15 +345,25 @@ Recommended next step:
 
 - Step 6C should commit the Step 6/6B local files, then Step 7 can design the transactions schema.
 
-## Step 7 Actual Transactions — Local Only — 2026-09-16
+## Step 7 Actual Transactions — Deployed; Verified 2026-09-20
 
 Status and recovery:
 
 - Reused `supabase/migrations/20260909161607_create_transactions.sql`; no second transactions migration was created.
 - Recovered the untracked SQL and the partial Step 7 backend-plan notes. No transaction service, hook, or database types existed.
 - Preserved applicable schema, RLS, timestamp and ownership constraints. Removed draft pending/fixed-expense columns, the extra `system` source and speculative indexes to match the actual-only scope.
-- Transactions migration, TypeScript types, service and hook are implemented locally. The migration has NOT been applied live because Supabase MCP is unavailable due to unsupported OAuth scopes.
-- No MCP calls, OAuth attempts, remote SQL, migration renaming or commits belong to this step. Earlier live-state statements in this document are historical and were not reverified.
+- Transactions migration, TypeScript types, service and hook were implemented locally on 2026-09-16. The migration is deployed, as confirmed by the subsequent read-only Supabase MCP verification on 2026-09-20.
+- The original local implementation made no MCP calls or remote changes because MCP OAuth was unavailable then. That access limitation is historical; the latest verification used the connected MCP without applying migrations or modifying the database.
+
+Deployment verification — 2026-09-20:
+
+- Connected project reference: `zmbyqstmgtdbyvczuvki`, confirmed by the MCP project URL.
+- Live migration history includes version `20260909161607` with name `create_transactions`, matching `supabase/migrations/20260909161607_create_transactions.sql`.
+- All four local migration versions and names match live history, with no local-only or live-only entries.
+- `public.profiles`, `public.user_preferences`, `public.categories`, `public.payment_methods`, and `public.transactions` are present, with RLS enabled on all five.
+- Migration deployment: verified. Full schema equivalence: not yet verified; matching history and table presence do not establish SQL-content equivalence or rule out later schema drift. The schema and ownership details below describe the local implementation, not a completed live schema comparison.
+- Authenticated runtime/RLS testing: still pending. Frontend transaction integration: not started; existing pages remain on local/mock data.
+- Step 8 / expected_transactions remains not started. Verification was read-only; this status update changes documentation only.
 
 Frontend audit and integration mismatches:
 
@@ -408,5 +421,5 @@ Scope and validation:
 - expected_transactions schema/types/services/hooks are deferred to Step 8. No savings/debt tables or storage work.
 - Offline service tests: `node --test tests/transactionService.test.mjs` (Node 24) cover identity spoofing, owner filters, missing client/session, safe errors, amount/date validation, month boundaries and pagination. These mock the client and never connect to Supabase.
 - Validation results: all 6 offline tests passed; `npm run typecheck`, `npm run build` and `git diff --check` passed. New untracked files were also whitespace-checked. Lint unavailable (no lint script). Build retains the large-chunk warning; Node reports its experimental type-stripping API; Git reports existing CRLF-to-LF normalization for guidelines.md.
-- Runtime Auth/RLS, trigger/FK delete behavior and migration execution testing remain deferred to a later validation phase; static checks and mocked tests do not prove live enforcement.
-- Step 7B recommendation: review this local diff and validate in an explicitly authorized local/test database using two authenticated users plus anon. Exercise CRUD isolation, mismatched references, ownership reassignment, null references, parent deletion/archive, timestamps and date boundaries. Verify the existing Auth bootstrap separately. Live application requires a separate explicit instruction after access is restored; keep this filename and do not mark it applied now.
+- Migration deployment is verified in live history. Full schema equivalence, runtime Auth/RLS and trigger/FK delete behavior remain unverified; static checks, mocked tests and enabled RLS do not prove live enforcement.
+- Step 7B recommendation: compare the live schema against the local migration using read-only inspection, then validate in an explicitly authorized local/test database using two authenticated users plus anon. Exercise CRUD isolation, mismatched references, ownership reassignment, null references, parent deletion/archive, timestamps and date boundaries. Verify the existing Auth bootstrap separately. Do not reapply the deployed migration; frontend transaction integration and Step 8 remain not started.

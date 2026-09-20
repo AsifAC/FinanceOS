@@ -2840,10 +2840,13 @@ Recommended next step:
 - Step 6C should commit the Step 6/6B local files, then Step 7 can design the transactions schema.
 
 
-## Supabase Backend Restart - Step 7 Actual Transactions - 2026-09-16
+## Supabase Backend Restart - Step 7 Actual Transactions - Deployed; Verified 2026-09-20
 
-- Implemented locally only: `supabase/migrations/20260909161607_create_transactions.sql`, transaction types, `src/services/transactionService.ts` and `src/hooks/useTransactions.ts`. Recovered and completed the existing draft; did not create a duplicate migration.
-- Migration has NOT been applied live because MCP OAuth is unavailable due to unsupported scopes. No MCP/login/remote SQL attempted; filename retained and changes left uncommitted.
+- Implemented locally on 2026-09-16: `supabase/migrations/20260909161607_create_transactions.sql`, transaction types, `src/services/transactionService.ts` and `src/hooks/useTransactions.ts`. Recovered and completed the existing draft; did not create a duplicate migration.
+- Migration deployment is verified by the 2026-09-20 read-only Supabase MCP check: project `zmbyqstmgtdbyvczuvki` records version `20260909161607`, name `create_transactions`, in live migration history. The earlier MCP OAuth limitation is historical; the migration is already applied.
+- All four local migration versions and names match live history, with no local-only or live-only entries. All five expected public tables (`profiles`, `user_preferences`, `categories`, `payment_methods`, `transactions`) exist with RLS enabled.
+- Full schema equivalence is not yet verified: migration history and table presence do not establish SQL-content equivalence or exclude later schema drift. The schema details below describe the local implementation. Authenticated runtime/RLS testing is still pending; frontend transaction integration has not started.
+- Earlier step inventories and next-step recommendations are historical checkpoints, superseded by this deployment verification. The verification made no database changes, and this status update changes documentation only. Step 8 remains not started.
 - Actual transactions only: income, expense, savings contributions and debt payments. All amounts are positive numeric(14,2); type determines financial direction. Zero, negative and NaN amounts are rejected; title must not be blank.
 - `transaction_date` is the source of month/year. No redundant month/year columns; service queries use first-of-month inclusive/next-month exclusive boundaries, with month numbered 1–12 (frontend uses 0–11).
 - Nullable category and payment-method FKs use ON DELETE SET NULL, preserving historical records. Archiving does not clear links.
@@ -2853,9 +2856,9 @@ Recommended next step:
 - Frontend still uses name/category-name/local IDs/status/fixed-expense fields. Backend uses title/owned UUID references and actual-only rows. Pending fixed expenses are excluded from local actual totals, while other pending types are counted; resolve this before any UI adapter. Description/provenance/recurring metadata have no direct current frontend equivalent.
 - Keep Preview Mode, batch preview queues and localStorage completely separate: no upload, migration, synchronization, array merging or Dashboard integration. The new hook is not mounted by any page; future preview callers must disable it.
 - Recurring flags/group ID are foundation only; recurring engine, automation and templates are deferred. expected_transactions is Step 8. No savings/debt schema or storage work.
-- Offline service tests use a mocked client only. Runtime Auth/RLS, migration execution, trigger/FK behavior and hook lifecycle integration testing remain deferred to the validation phase.
+- Offline service tests use a mocked client only. Migration deployment is verified; full schema equivalence, runtime Auth/RLS, trigger/FK behavior and hook lifecycle integration testing remain pending.
 - Validation: 6 offline service tests passed; typecheck/build/diff checks passed. Lint unavailable (no lint script). Vite retains its large-chunk warning; Node type stripping is experimental; Git warns about guidelines.md line-ending normalization.
-- See `docs/supabase-backend-plan.md` Step 7 for the full frontend audit, schema/security rationale, service semantics and Step 7B validation matrix. Review/test locally before separately authorizing any live application.
+- See `docs/supabase-backend-plan.md` Step 7 for the full frontend audit, schema/security rationale, service semantics and Step 7B validation matrix. Next, compare the live schema read-only and perform separately authorized runtime testing; do not reapply the deployed migration or start Step 8.
 
 ## FinanceOS Public Authentication UI - 2026-09-16
 
