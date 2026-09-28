@@ -8,17 +8,29 @@
 
 ## Current Status
 
+### Verification onboarding deployment (2026-09-26)
+
+`20260926210523_account_verification.sql` was **applied live after explicit user approval**. Supabase recorded version `20260926210523`, name `account_verification`; the local filename and test reference were aligned to that version. Live checks confirmed four nullable profile columns: `phone_number`, `verification_channel`, `account_verified_at`, `phone_verified_at`. Table INSERT/UPDATE grants for public/anon/authenticated were revoked while existing editable profile columns plus verification preference remain owner-editable. Live checks confirmed RLS enabled, unchanged owner policies, blocked direct verification-field writes, authenticated RPC access and denied anonymous RPC access. No existing profiles were marked verified.
+
+The private `financeos_private.complete_account_verification` function needs SECURITY DEFINER solely to read Auth confirmation data and write protected profile columns. It uses an empty search_path, explicit auth.uid() ownership, restricted execute grants, and no caller-supplied user ID or timestamps. The public RPC wrapper is SECURITY INVOKER. Keep financeos_private outside exposed API schemas. Email requires confirmed Auth email plus recent signed JWT OTP evidence; phone requires recent Auth phone confirmation with no pending phone change. This is an onboarding record, not channel-specific MFA assurance. Existing email confirmations alone are not backfilled.
+
+Frontend Auth remains the same email/password account. `/auth/verify` requires authentication; normal app routes additionally require the profile timestamp. Phone uses authenticated phone_change, never phone signup. Successful completion copies confirmed phone in E.164 to profiles; email completion leaves phone unchanged. Preference is owner-updated before requesting a code. The persistent AuthProvider handles logout navigation; browser financial data stays intact.
+
+SMS provider and email OTP-template configuration are **unknown**, because the available MCP tools cannot inspect Auth configuration. Delivery defaults disabled; no real codes/accounts were created. Required setup: Authentication → Email Templates → Magic Link must include `{{ .Token }}` and use six-digit OTPs with working email delivery; Authentication → Phone must have a securely configured SMS provider and phone confirmation enabled. Enable the corresponding VITE_EMAIL_OTP_READY / VITE_PHONE_OTP_READY deployment flag only after review. See README for manual checks. Do not deploy the enforced gate without an approved migration and at least one working delivery channel.
+
+Migration approval and application are complete. Local database security checks passed again after filename alignment. The security advisor reported only leaked-password protection disabled; this Auth setting was not changed. Email/SMS delivery remains unconfigured or unverified and disabled in the frontend. Developer Preview remains removed; financial pages remain explicitly browser-local, not Supabase account data. Step 8 / expected_transactions remains paused.
+
 - Public tables: profiles, user_preferences, categories, payment_methods, and transactions exist live; RLS is enabled on all five (read-only MCP verification, 2026-09-20)
 - Public RLS policies: profiles, user_preferences, categories, and payment_methods ownership policies exist live
 - Storage buckets: not created yet
 - Edge functions: not created yet
 - Public database functions/triggers: profile/preferences timestamp, new-user bootstrap, default category bootstrap, payment_methods timestamp trigger, and atomic payment method default RPC exist live
-- Frontend screens remain on the existing local/mock data path
+- Application pages require Supabase authentication and use the existing explicitly labeled browser-local financial data workflow; Developer Preview is removed
 - Supabase Auth service/provider exists locally and is not used for finance data yet
 - Categories schema/service/hooks exist locally and are not connected to UI pages yet
 - Payment methods schema/service/hooks exist locally and are not connected to UI pages yet
 - Step 7 actual transactions migration is deployed; types/service/hook are implemented locally, and frontend transaction integration has not started
-- All four local migration versions and names match live migration history; full schema equivalence is not yet verified, and authenticated runtime/RLS testing remains pending
+- All five local migration versions and names match live migration history; full financial schema equivalence is not yet verified, and live authenticated runtime/RLS testing remains pending
 
 ## Integration Order
 
@@ -75,10 +87,11 @@ Storage buckets are planned but not created yet:
 - Use only frontend-safe variables: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 - `.env.local` should remain gitignored and machine-specific.
 
-## Preview Mode Separation
+## Local Financial Data Separation
 
-- Mock/preview mode must remain separate from real Supabase data.
-- Preview mode state must not write to live Supabase tables or storage.
+- Developer Preview controls and the mock state overlay have been removed. Retained mock fixtures are not loaded by application pages.
+- Existing financial localStorage remains intact and browser-wide, not scoped to an authenticated account. Application pages disclose this limitation and do not represent those records as live Supabase data.
+- Authentication protects application access; it does not migrate, upload, merge, or synchronize local financial records with Supabase.
 - Real Supabase reads/writes should be introduced one workflow at a time after its schema, RLS policies, tests, and rollback path are documented.
 
 The step notes below record earlier implementation checkpoints. Their table inventories and next-step recommendations are historical; Current Status and the Step 7 deployment verification describe the latest verified state.

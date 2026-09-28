@@ -1,7 +1,8 @@
 import { Category, ExpectedAmount, PaymentPlan, Transaction } from "../app/data/data";
 import type { SavedMonthlyBudget, SavedYearlyBudget } from "../app/lib/financeStore";
 import { MONTHS } from "../app/lib/constants";
-import { DEV_PREVIEW_YEAR } from "../config/devPreview";
+// Retained fixture data; never loaded by the authenticated application.
+const DEV_PREVIEW_YEAR = "2027";
 
 const year = DEV_PREVIEW_YEAR;
 

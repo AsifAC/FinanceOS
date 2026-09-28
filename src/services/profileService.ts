@@ -11,6 +11,7 @@ export type ProfileUpdates = Partial<
     | "timezone"
     | "currency"
     | "onboarding_completed"
+    | "verification_channel"
   >
 >;
 
@@ -45,7 +46,7 @@ function failure<T>(error: ProfileServiceError): ProfileServiceResult<T> {
 function mapError(error: { code?: string; message?: string }): ProfileServiceError {
   return {
     code: error.code,
-    message: error.message || "Profile request failed.",
+    message: "We couldn't load or save your account. Please retry. Account verification may not be available yet.",
   };
 }
 
@@ -88,7 +89,7 @@ export async function updateCurrentProfile(
 
   const { data, error } = await supabase
     .from("profiles")
-    .update(updates)
+    .update(Object.fromEntries(Object.entries(updates).filter(([key]) => ["email", "full_name", "display_name", "avatar_url", "timezone", "currency", "onboarding_completed", "verification_channel"].includes(key))) as ProfileUpdates)
     .eq("id", userId.data)
     .select("*")
     .single();
@@ -96,4 +97,16 @@ export async function updateCurrentProfile(
   if (error) return failure(mapError(error));
 
   return success(data);
+}
+
+export async function completeAccountVerification(channel: "email" | "phone"): Promise<ProfileServiceResult<Profile>> {
+  if (!supabase) return failure(notConfiguredError);
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId.ok) return failure(userId.error);
+    const { data, error } = await supabase.rpc("complete_account_verification", { channel });
+    return error ? failure(mapError(error)) : success(data);
+  } catch {
+    return failure({ message: "We couldn't save verification. Please retry." });
+  }
 }

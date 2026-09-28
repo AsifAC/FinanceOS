@@ -1,0 +1,52 @@
+// Disposable local PostgreSQL (PGlite), never a live project.
+// Install @electric-sql/pglite@0.3.14 under TEMP/financeos-verification-db-test.
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const { PGlite } = await import(pathToFileURL(join(tmpdir(), 'financeos-verification-db-test/node_modules/@electric-sql/pglite/dist/index.js')).href);
+const db = new PGlite();
+const owner = '11111111-1111-4111-8111-111111111111';
+const other = '22222222-2222-4222-8222-222222222222';
+try {
+  await db.exec(`create role authenticated; create role anon; create schema auth;
+    create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    create function auth.jwt() returns jsonb language sql as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
+    grant usage on schema auth to authenticated, anon;
+    create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb, phone text, phone_change text, phone_confirmed_at timestamptz, email_confirmed_at timestamptz);
+  `);
+  await db.exec(await readFile(new URL('../supabase/migrations/20260902210238_create_profiles_and_user_preferences.sql', import.meta.url), 'utf8'));
+  await db.exec(`grant all on public.profiles to authenticated, anon;
+    insert into auth.users(id, email, email_confirmed_at) values ('${owner}', 'owner@example.com', now()), ('${other}', 'other@example.com', now());`);
+  await db.exec(await readFile(new URL('../supabase/migrations/20260926210523_account_verification.sql', import.meta.url), 'utf8'));
+  assert.equal((await db.query('select count(*)::int as count from public.profiles where account_verified_at is not null')).rows[0].count, 0);
+  console.log('PASS migration executes; existing accounts remain unverified');
+  await db.exec(`set role authenticated; set request.jwt.claim.sub = '${owner}';`);
+  await assert.rejects(db.exec(`update public.profiles set account_verified_at=now() where id='${owner}'`), /permission denied/);
+  await assert.rejects(db.exec(`update public.profiles set phone_verified_at=now(), phone_number='+12125551234' where id='${owner}'`), /permission denied/);
+  await assert.rejects(db.exec(`select public.complete_account_verification('email')`), /recent Auth OTP/);
+  await assert.rejects(db.exec(`select public.complete_account_verification('phone')`), /recent Auth phone/);
+  console.log('PASS direct timestamp/phone forgery and unconfirmed completion denied');
+  await db.exec(`update public.profiles set verification_channel='phone' where id='${owner}'; update public.profiles set verification_channel='email' where id='${other}';`);
+  assert.equal((await db.query('select verification_channel from public.profiles')).rows[0].verification_channel, 'phone');
+  assert.equal((await db.query('select id from public.profiles')).rows.length, 1);
+  await db.exec(`reset role;`);
+  assert.equal((await db.query(`select verification_channel from public.profiles where id='${other}'`)).rows[0].verification_channel, null);
+  console.log('PASS existing RLS restricts reads and preference updates to owner');
+  await db.exec(`set role authenticated;`);
+  await db.query(`select set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ amr: [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }] })]);
+  await db.exec(`select public.complete_account_verification('email')`);
+  let profile = (await db.query('select * from public.profiles')).rows[0];
+  assert.ok(profile.account_verified_at); assert.equal(profile.phone_number, null); assert.equal(profile.phone_verified_at, null);
+  console.log('PASS recent Auth OTP completes email without overwriting phone fields');
+  await db.exec(`reset role; update auth.users set phone='12125551234', phone_confirmed_at=now(), phone_change='' where id='${owner}'; set role authenticated; select public.complete_account_verification('phone');`);
+  profile = (await db.query('select * from public.profiles')).rows[0];
+  assert.equal(profile.phone_number, '+12125551234'); assert.ok(profile.phone_verified_at);
+  await db.exec(`select public.complete_account_verification('email')`);
+  assert.equal((await db.query('select phone_number from public.profiles')).rows[0].phone_number, '+12125551234');
+  console.log('PASS confirmed Auth phone copied as E.164; email preserves it');
+  await db.exec(`reset role; set role anon;`);
+  await assert.rejects(db.exec(`select public.complete_account_verification('email')`), /permission denied/);
+  console.log('PASS anonymous RPC access denied');
+} finally { await db.close(); }

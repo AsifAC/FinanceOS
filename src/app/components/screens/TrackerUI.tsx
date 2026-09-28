@@ -151,7 +151,7 @@ function savingsTransactionsByCategory(transactions: Transaction[], activeYear: 
 }
 
 export function TrackerUI() {
-  const { activeYear, selectedMonth, actualAmounts, expectedAmounts, previewModeEnabled, transactions, categories } = useFinanceData();
+  const { activeYear, selectedMonth, actualAmounts, expectedAmounts, transactions, categories } = useFinanceData();
   const current = getMonthlyAmount(actualAmounts, selectedMonth);
   const expected = getMonthlyAmount(expectedAmounts, selectedMonth);
   const incomeTotal = actualAmounts.slice(0, selectedMonth + 1).reduce((s, m) => s + m.income, 0);
@@ -282,20 +282,6 @@ export function TrackerUI() {
               <p className="text-xs text-[var(--financeos-text-muted)]">
                 {budgetHealth >= 75 ? "Excellent" : budgetHealth >= 50 ? "Good" : "Needs Work"}
               </p>
-              {previewModeEnabled ? (
-                <div className="mt-3 border-t border-[var(--financeos-border)] pt-3 text-left text-[11px] text-[var(--financeos-text-muted)]">
-                  <p className="mb-1 text-center text-[var(--financeos-text-secondary)]" style={{ fontWeight: 600 }}>Preview score inputs</p>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                    <span>Actual Savings</span><span className="text-right">{money(current.savings)}</span>
-                    <span>Expected Savings</span><span className="text-right">{money(expected.savings)}</span>
-                    <span>Actual Expenses</span><span className="text-right">{money(current.expenses)}</span>
-                    <span>Expected Expenses</span><span className="text-right">{money(expected.expenses)}</span>
-                    <span>Actual Debt</span><span className="text-right">{money(current.debt)}</span>
-                    <span>Expected Debt</span><span className="text-right">{money(expected.debt)}</span>
-                    <span>Final Score</span><span className="text-right">{budgetHealth}</span>
-                  </div>
-                </div>
-              ) : null}
             </CardContent>
           </Card>
         </div>
@@ -309,9 +295,6 @@ export function TrackerUI() {
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--financeos-text-muted)]">Savings trend</p>
                 <h3 className="text-base text-[var(--financeos-text-primary)]" style={{ fontWeight: 700 }}>Actual vs Expected Savings</h3>
               </div>
-              {previewModeEnabled ? (
-                <span className="rounded-full bg-[var(--financeos-warning-bg)] px-3 py-1 text-xs text-[var(--financeos-warning-icon)]" style={{ fontWeight: 700 }}>Preview data</span>
-              ) : null}
             </div>
             {hasSavingsData ? (
               <div className="h-[260px] w-full">

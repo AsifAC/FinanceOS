@@ -21,6 +21,7 @@ import { Notifications } from "./components/screens/Notifications";
 import { HelpCenter } from "./components/screens/HelpCenter";
 import { LandingPage } from "./components/screens/LandingPage";
 import { AuthPage } from "./components/screens/AuthPage";
+import { VerifyAccount } from "./components/screens/VerifyAccount";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { index: true, Component: LandingPage },
       { path: "auth/login", element: createElement(AuthPage, { mode: "login" }) },
       { path: "auth/signup", element: createElement(AuthPage, { mode: "signup" }) },
+      { path: "auth/verify", Component: VerifyAccount },
       { path: "start", Component: StartRoute },
       { path: "dashboard", Component: Dashboard },
       { path: "setup", Component: SetupRoute },

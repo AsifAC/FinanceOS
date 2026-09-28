@@ -23,7 +23,6 @@ import { Separator } from "../ui/separator";
 import { MONTHS, currentYear } from "../../lib/constants";
 import { PaymentMethod, PaymentMethodType, PaymentNetwork, useFinanceData } from "../../lib/financeStore";
 import { useFinanceOSTheme } from "../../lib/theme";
-import { DEV_PREVIEW_MODE, DEV_PREVIEW_YEAR } from "../../../config/devPreview";
 import { PaymentMethodGrid, paymentMethodTypeOptions, paymentNetworkOptions } from "../common/PaymentMethodCards";
 import { TimezoneSelector } from "../common/TimezoneSelector";
 import { toast } from "sonner";
@@ -34,13 +33,11 @@ export function Settings() {
     startDayOfWeek,
     timezone,
     paymentMethods,
-    previewModeEnabled,
     setActiveYear,
     updatePreferences,
     addPaymentMethod,
     updatePaymentMethod,
     deletePaymentMethod,
-    setPreviewModeEnabled,
     resetAppData,
   } = useFinanceData();
   const { theme, setTheme } = useFinanceOSTheme();
@@ -384,29 +381,6 @@ export function Settings() {
                 </div>
               )}
             </div>
-            {DEV_PREVIEW_MODE && (
-              <>
-                <Separator />
-                <div className="flex flex-col gap-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--financeos-text-primary)]">Enable Preview Data</p>
-                    <p className="text-xs text-[var(--financeos-text-muted)]">Overlay isolated {DEV_PREVIEW_YEAR} mock transactions, reports, charts, and archive snapshots.</p>
-                  </div>
-                  <Switch
-                    checked={previewModeEnabled}
-                    onCheckedChange={(enabled) => {
-                      setPreviewModeEnabled(enabled);
-                      toast.success(enabled ? "Preview data enabled" : "Preview data disabled");
-                    }}
-                  />
-                </div>
-                {previewModeEnabled && (
-                  <div className="rounded-2xl border border-[#F59E0B]/25 bg-[#F59E0B]/10 px-4 py-3 text-sm text-[#D97706]">
-                    Preview Data Enabled. Mock data is merged only for display and is not written into app data storage.
-                  </div>
-                )}
-              </>
-            )}
           </CardContent>
         </Card>
       </section>

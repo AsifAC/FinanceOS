@@ -166,7 +166,7 @@ export const helpSections: HelpSection[] = [
         id: "transaction-not-appearing",
         category: "faq",
         title: "Why doesn't my transaction appear?",
-        summary: "Check the active month/year, preview state, filters, and saved transaction status.",
+        summary: "Check the active month/year, filters, and saved local transaction status.",
         icon: FileQuestion,
       },
       {

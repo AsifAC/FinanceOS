@@ -171,6 +171,10 @@ export type Database = {
       };
       profiles: {
         Row: {
+          phone_number: string | null;
+          verification_channel: "email" | "phone" | null;
+          account_verified_at: string | null;
+          phone_verified_at: string | null;
           id: string;
           email: string | null;
           full_name: string | null;
@@ -185,6 +189,10 @@ export type Database = {
         Insert: {
           id: string;
           email?: string | null;
+          phone_number?: string | null;
+          verification_channel?: "email" | "phone" | null;
+          account_verified_at?: string | null;
+          phone_verified_at?: string | null;
           full_name?: string | null;
           display_name?: string | null;
           avatar_url?: string | null;
@@ -197,6 +205,10 @@ export type Database = {
         Update: {
           id?: string;
           email?: string | null;
+          phone_number?: string | null;
+          verification_channel?: "email" | "phone" | null;
+          account_verified_at?: string | null;
+          phone_verified_at?: string | null;
           full_name?: string | null;
           display_name?: string | null;
           avatar_url?: string | null;
@@ -262,6 +274,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      complete_account_verification: {
+        Args: { channel: "email" | "phone" };
+        Returns: Database["public"]["Tables"]["profiles"]["Row"];
+      };
       set_default_payment_method: {
         Args: {
           target_payment_method_id: string;

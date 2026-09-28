@@ -1,13 +1,11 @@
 import { AppShell } from "./AppShell";
-import { FinanceDataProvider } from "../../lib/financeStore";
 import { AuthProvider } from "../../../providers/AuthProvider";
+import { ProfileProvider } from "../../../hooks/useProfile";
 
 export function AppLayout() {
   return (
     <AuthProvider>
-      <FinanceDataProvider>
-        <AppShell />
-      </FinanceDataProvider>
+      <ProfileProvider><AppShell /></ProfileProvider>
     </AuthProvider>
   );
 }

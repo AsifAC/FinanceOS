@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { Navigate, useLocation } from "react-router";
 import { isSupabaseConfigured } from "../lib/supabaseClient";
 import {
   getCurrentSession,
@@ -55,6 +56,11 @@ function isMissingConfig(error: AuthServiceError | null) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const [logoutComplete, setLogoutComplete] = useState(false);
+  useEffect(() => {
+    if (logoutComplete && location.pathname === "/") setLogoutComplete(false);
+  }, [logoutComplete, location.pathname]);
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
@@ -186,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    setAuthState((current) => ({ ...current, isLoading: true, error: null }));
+    setAuthState((current) => ({ ...current, error: null }));
 
     const result = await signOutWithSupabase();
     if (!result.ok) {
@@ -204,7 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading: false,
       error: null,
     });
-
+    // This provider outlives protected pages when SIGNED_OUT unmounts them.
+    setLogoutComplete(true);
     return result;
   }, []);
 
@@ -220,5 +227,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [authState, refreshSession, signIn, signOut, signUp],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{logoutComplete && location.pathname !== "/" ? <Navigate to="/" replace /> : children}</AuthContext.Provider>;
 }

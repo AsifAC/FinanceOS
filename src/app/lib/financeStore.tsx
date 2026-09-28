@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useReducer } from "react";
 import {
   Category,
   CategoryType,
@@ -11,8 +11,6 @@ import {
 } from "../data/data";
 import { MONTHS, currentMonthIndex, currentYear } from "./constants";
 import { completeSetup as persistSetupComplete, getSetupProfile, resetSetup, SetupProfile } from "./setupState";
-import { DEV_PREVIEW_MODE, DEV_PREVIEW_STORAGE_KEY, DEV_PREVIEW_YEAR } from "../../config/devPreview";
-import { mockFinanceData } from "../../mock/mockFinanceData";
 import { getBrowserTimezone, StartDayOfWeek } from "./datePreferences";
 
 const STORAGE_KEY = "financeos:app-data:v1";
@@ -170,7 +168,6 @@ type FinanceAction =
   | { type: "UPDATE_SAVED_MONTHLY_BUDGET_NOTES"; id: string; notes: string }
   | { type: "UPDATE_SAVED_YEARLY_BUDGET_NOTES"; id: string; notes: string }
   | { type: "COMPLETE_SETUP"; profile: SetupProfile }
-  | { type: "RESET_PREVIEW_DATA" }
   | { type: "RESET_APP_DATA" };
 
 const emptyState: FinanceState = {
@@ -192,42 +189,6 @@ const emptyState: FinanceState = {
   savedMonthlyBudgets: [],
   savedYearlyBudgets: [],
 };
-
-function createPreviewState(selectedMonth = emptyState.selectedMonth): FinanceState {
-  return {
-    ...emptyState,
-    activeYear: DEV_PREVIEW_YEAR,
-    selectedMonth,
-    setupCompleted: true,
-    setupProfile: {
-      budgetName: "Developer Preview Budget",
-      year: DEV_PREVIEW_YEAR,
-      startMonth: "January",
-      currency: "USD ($)",
-      categories: mockFinanceData.categories,
-      expectedIncome: "6400",
-      expectedSavings: "1200",
-      expectedDebt: "520",
-      expectedExpenses: "3600",
-      startDayOfWeek: emptyState.startDayOfWeek,
-      timezone: emptyState.timezone,
-      paymentMethods: [],
-    },
-    budgetYears: mockFinanceData.budgetYears,
-    categories: mockFinanceData.categories,
-    transactions: mockFinanceData.transactions,
-    expectedAmounts: mockFinanceData.expectedAmounts,
-    paymentPlans: mockFinanceData.paymentPlans,
-    savedMonthlyBudgets: mockFinanceData.savedMonthlyBudgets,
-    savedYearlyBudgets: mockFinanceData.savedYearlyBudgets,
-  };
-}
-
-function loadPreviewEnabled() {
-  if (!DEV_PREVIEW_MODE || typeof window === "undefined") return false;
-  const saved = window.localStorage.getItem(DEV_PREVIEW_STORAGE_KEY);
-  return saved === null ? DEV_PREVIEW_MODE : saved === "true";
-}
 
 function toNumber(value: string | number | undefined) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -626,8 +587,6 @@ function reducer(state: FinanceState, action: FinanceAction): FinanceState {
         expectedAmounts: repeatedPlan,
       };
     }
-    case "RESET_PREVIEW_DATA":
-      return createPreviewState(state.selectedMonth);
     case "RESET_APP_DATA":
       resetSetup();
       return emptyState;
@@ -747,7 +706,6 @@ interface FinanceContextValue {
   startDayOfWeek: StartDayOfWeek;
   timezone: string;
   paymentMethods: PaymentMethod[];
-  previewModeEnabled: boolean;
   categories: Category[];
   transactions: Transaction[];
   expectedAmounts: ExpectedAmount[];
@@ -762,7 +720,6 @@ interface FinanceContextValue {
   addPaymentMethod(paymentMethod: Omit<PaymentMethod, "id">): void;
   updatePaymentMethod(id: string, updates: Partial<PaymentMethod>): void;
   deletePaymentMethod(id: string): void;
-  setPreviewModeEnabled(enabled: boolean): void;
   addCategory(category: Omit<Category, "id">): void;
   updateCategory(id: string, updates: Partial<Category>): void;
   deleteCategory(id: string): void;
@@ -789,21 +746,13 @@ const FinanceContext = createContext<FinanceContextValue | null>(null);
 
 export function FinanceDataProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
-  const [previewState, previewDispatch] = useReducer(reducer, undefined, () => createPreviewState());
-  const [previewModeEnabled, setPreviewModeEnabledState] = useState(loadPreviewEnabled);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  useEffect(() => {
-    if (DEV_PREVIEW_MODE) {
-      window.localStorage.setItem(DEV_PREVIEW_STORAGE_KEY, String(previewModeEnabled));
-    }
-  }, [previewModeEnabled]);
-
-  const readState = previewModeEnabled ? previewState : state;
-  const activeDispatch = previewModeEnabled ? previewDispatch : dispatch;
+  const readState = state;
+  const activeDispatch = dispatch;
 
   const activeTransactions = useMemo(
     () => filterTransactionsByYear(readState.transactions, readState.activeYear),
@@ -823,7 +772,6 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
     startDayOfWeek: readState.startDayOfWeek,
     timezone: readState.timezone,
     paymentMethods: readState.paymentMethods,
-    previewModeEnabled,
     categories: readState.categories,
     transactions: activeTransactions,
     expectedAmounts: readState.expectedAmounts,
@@ -838,10 +786,6 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
     addPaymentMethod: (paymentMethod) => activeDispatch({ type: "ADD_PAYMENT_METHOD", paymentMethod: { id: makeId("payment-method"), ...paymentMethod } }),
     updatePaymentMethod: (id, updates) => activeDispatch({ type: "UPDATE_PAYMENT_METHOD", id, updates }),
     deletePaymentMethod: (id) => activeDispatch({ type: "DELETE_PAYMENT_METHOD", id }),
-    setPreviewModeEnabled: (enabled) => {
-      if (enabled) previewDispatch({ type: "SET_SELECTED_MONTH", month: state.selectedMonth });
-      setPreviewModeEnabledState(enabled);
-    },
     addCategory: (category) => activeDispatch({ type: "ADD_CATEGORY", category: { id: makeId("category"), ...category } }),
     updateCategory: (id, updates) => activeDispatch({ type: "UPDATE_CATEGORY", id, updates }),
     deleteCategory: (id) => activeDispatch({ type: "DELETE_CATEGORY", id }),
@@ -877,18 +821,11 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
     updateSavedMonthlyBudgetNotes: (id, notes) => activeDispatch({ type: "UPDATE_SAVED_MONTHLY_BUDGET_NOTES", id, notes }),
     updateSavedYearlyBudgetNotes: (id, notes) => activeDispatch({ type: "UPDATE_SAVED_YEARLY_BUDGET_NOTES", id, notes }),
     completeSetup: (profile) => {
-      if (previewModeEnabled) {
-        previewDispatch({ type: "COMPLETE_SETUP", profile });
-      } else {
-        persistSetupComplete(profile);
-        dispatch({ type: "COMPLETE_SETUP", profile });
-      }
+      persistSetupComplete(profile);
+      dispatch({ type: "COMPLETE_SETUP", profile });
     },
-    resetAppData: () => {
-      if (previewModeEnabled) previewDispatch({ type: "RESET_PREVIEW_DATA" });
-      else dispatch({ type: "RESET_APP_DATA" });
-    },
-  }), [activeDispatch, activePaymentPlans, activeTransactions, actualAmounts, pendingTransactions, previewModeEnabled, readState, state.selectedMonth]);
+    resetAppData: () => dispatch({ type: "RESET_APP_DATA" }),
+  }), [activeDispatch, activePaymentPlans, activeTransactions, actualAmounts, pendingTransactions, readState]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 }

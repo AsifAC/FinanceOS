@@ -16,7 +16,8 @@ import { MonthSelector } from "../common/MonthSelector";
 import { useFinanceData } from "../../lib/financeStore";
 import { MONTHS, currentMonthIndex, currentYear } from "../../lib/constants";
 import { useNotifications } from "../../lib/notifications";
-import { clearFinanceOSSession, getSwitchAccountRoute } from "../../lib/session";
+import { getSwitchAccountRoute } from "../../lib/session";
+import { useLogout } from "../../../hooks/useLogout";
 import { useAuth } from "../../../hooks/useAuth";
 import { MenuDropdown } from "./MenuDropdown";
 
@@ -52,15 +53,15 @@ export function TopNav() {
     activeYear,
     selectedMonth,
     timezone,
-    previewModeEnabled,
     setActiveYear,
     setSelectedMonth,
     state,
   } = useFinanceData();
-  const { isAuthenticated, signOut: signOutAuth, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { logout, isSigningOut, logoutError } = useLogout();
   const { unreadCount } = useNotifications();
   const pageTitle = pageTitles[location.pathname] ?? "FinanceOS";
-  const profileName = state.setupProfile?.budgetName || "FinanceOS User";
+  const profileName = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "FinanceOS User";
   const profileEmail = user?.email ?? (isAuthenticated ? "Email unavailable" : "No email connected");
   const initials = getInitials(profileName);
   const yearOptions = Array.from(new Set([
@@ -69,18 +70,6 @@ export function TopNav() {
     String(Number(activeYear) + 1),
     String(currentYear),
   ])).sort();
-  const handleSignOut = async () => {
-    const result = await signOutAuth();
-    clearFinanceOSSession();
-
-    if (!result.ok) {
-      toast.error(result.error.message);
-      return;
-    }
-
-    toast.info("Signed out of the current FinanceOS session.");
-    navigate("/");
-  };
 
   return (
     <header className="sticky top-0 z-40 px-3 py-3 sm:px-6">
@@ -105,11 +94,6 @@ export function TopNav() {
                   <Badge variant="secondary" className="border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[11px] text-[var(--financeos-text-secondary)]">
                     {activeYear} Budget
                   </Badge>
-                  {previewModeEnabled && (
-                    <Badge className="border-0 bg-[#D97706] text-[11px] text-white">
-                      Preview Data Enabled
-                    </Badge>
-                  )}
                 </span>
               </span>
             </Link>
@@ -184,6 +168,7 @@ export function TopNav() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link to="/settings">Account / Settings</Link></DropdownMenuItem>
                 <DropdownMenuItem
                   className="items-start gap-3 rounded-2xl px-3 py-3"
                   onSelect={() => {
@@ -212,20 +197,22 @@ export function TopNav() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="items-start gap-3 rounded-2xl px-3 py-3 focus:bg-[#EF4444]/10"
+                  disabled={isSigningOut}
+                  className="items-start gap-3 rounded-2xl px-3 py-3"
                   onSelect={(event) => {
                     event.preventDefault();
-                    void handleSignOut();
+                    void logout();
                   }}
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] bg-[#EF4444]/10 text-[#EF4444]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] bg-[var(--financeos-icon-container)] text-[var(--financeos-text-secondary)]">
                     <LogOut className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-[#EF4444]">Log out</span>
+                    <span className="block text-sm font-semibold">{isSigningOut ? "Logging out…" : "Log out"}</span>
                     <span className="mt-0.5 block text-xs leading-5 text-[var(--financeos-text-muted)]">End your current session</span>
                   </span>
                 </DropdownMenuItem>
+                {logoutError && <p role="alert" className="px-3 py-2 text-sm">{logoutError}</p>}
               </DropdownMenuContent>
             </DropdownMenu>
 

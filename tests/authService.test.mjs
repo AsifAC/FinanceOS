@@ -8,7 +8,7 @@ const source = await readFile(new URL("../src/services/authService.ts", import.m
 let sequence = 0;
 async function load(auth) {
   globalThis.__authTestClient = auth ? { auth } : null;
-  const js = stripTypeScriptTypes(source.replace('import { supabase } from "../lib/supabaseClient";', "const supabase = globalThis.__authTestClient;"));
+  const js = stripTypeScriptTypes(source.replace('import { supabase } from "../lib/supabaseClient";', "const supabase = globalThis.__authTestClient;").replace(/import \{ normalizePhone[^\n]+\n/, 'const normalizePhone = value => value; const verificationDelivery = { email: false, phone: false };\n'));
   const service = await import(`data:text/javascript;base64,${Buffer.from(js).toString("base64")}#${sequence++}`);
   delete globalThis.__authTestClient;
   return service;
@@ -39,6 +39,33 @@ test("known and unknown Auth errors do not expose raw server messages", async ()
     assert.equal(result.error.message, message);
     assert.equal(JSON.stringify(result).includes("private server detail"), false);
   }
+});
+
+test("Auth transport, server and rate-limit statuses have distinct safe messages and preserve status/code", async () => {
+  const cases = [
+    [0, "network_error", "We couldn't connect to the verification service. Check your connection and try again."],
+    [500, "unexpected_failure", "The verification service encountered an error. Please try again later."],
+    [503, "unexpected_failure", "The verification service encountered an error. Please try again later."],
+    [429, "over_request_rate_limit", "Too many attempts. Please wait before trying again."],
+  ];
+  for (const [status, code, message] of cases) {
+    const service = await load({ getUser: async () => ({ data: null, error: { status, code, message: "private server detail" } }) });
+    const result = await service.getCurrentUser();
+    assert.equal(result.ok, false);
+    assert.equal(result.error.status, status);
+    assert.equal(result.error.code, code);
+    assert.equal(result.error.message, message);
+    assert.equal(JSON.stringify(result).includes("private server detail"), false);
+  }
+});
+
+test("known SMS provider failures retain their safe mapping, Auth code and status", async () => {
+  const service = await load({ getUser: async () => ({ data: null, error: { status: 500, code: "sms_send_failed", message: "provider secret detail" } }) });
+  const result = await service.getCurrentUser();
+  assert.equal(result.error.status, 500);
+  assert.equal(result.error.code, "sms_send_failed");
+  assert.equal(result.error.message, "SMS verification is currently unavailable. Try email or return later.");
+  assert.equal(JSON.stringify(result).includes("provider secret detail"), false);
 });
 
 test("thrown network errors resolve safely for session, login, signup and signout", async () => {

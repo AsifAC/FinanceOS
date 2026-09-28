@@ -4,7 +4,7 @@ import { ArrowLeft, DollarSign } from "lucide-react";
 import { AuthVisual } from "./AuthVisual";
 import "../../../styles/auth.css";
 
-export function AuthLayout({ mode, children }: { mode: "login" | "signup"; children: ReactNode }) {
+export function AuthLayout({ mode, children }: { mode: "login" | "signup" | "verify"; children: ReactNode }) {
   return (
     <main className={`financeos-auth financeos-auth-${mode}`}>
       <a href="#auth-content" className="auth-skip-link">Skip to form</a>
@@ -13,7 +13,7 @@ export function AuthLayout({ mode, children }: { mode: "login" | "signup"; child
           <span className="auth-brand-mark"><DollarSign size={22} aria-hidden="true" /></span>
           FinanceOS
         </Link>
-        <AuthVisual variant={mode} />
+        <AuthVisual variant={mode === "verify" ? "signup" : mode} />
         <div className="auth-brand-copy">
           <p className="auth-eyebrow">YOUR FINANCIAL LIFE, ORGANIZED</p>
           <h2>{mode === "login" ? <>Your money.<br /><span>One operating system.</span></> : <>Create your<br /><span>account.</span></>}</h2>
@@ -21,7 +21,7 @@ export function AuthLayout({ mode, children }: { mode: "login" | "signup"; child
         </div>
         <div className="auth-brand-footer" aria-hidden="true"><span>CLARITY STARTS HERE</span><span>01 / FINANCEOS</span></div>
       </section>
-      <section className="auth-form-panel" aria-label={mode === "login" ? "Log in" : "Create an account"}>
+      <section className="auth-form-panel" aria-label={mode === "verify" ? "Verify your account" : mode === "login" ? "Log in" : "Create an account"}>
         <Link to="/" className="auth-back"><ArrowLeft size={16} aria-hidden="true" /> Back to home</Link>
         <div id="auth-content" className="auth-form-content" tabIndex={-1}>{children}</div>
         <p className="auth-panel-footer">Your money. Your next chapter.</p>

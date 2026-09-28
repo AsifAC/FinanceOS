@@ -9,7 +9,7 @@ import {
   FileText,
   Sparkles,
 } from "lucide-react";
-import { useFinanceData } from "../../lib/financeStore";
+import { useAuth } from "../../../hooks/useAuth";
 
 type LandingCtas = {
   primary: { label: string; to: string };
@@ -51,6 +51,10 @@ const trustItems = [
 ];
 
 function LandingButton({ to, children, variant = "primary", icon = false }: LandingButtonProps) {
+  const { isLoading } = useAuth();
+  if (isLoading) {
+    return <span className={`financeos-landing-button financeos-landing-button-${variant}`} role="status">Loading session…</span>;
+  }
   return (
     <Link
       to={to}
@@ -337,14 +341,13 @@ function LandingFinalCTA({ ctas }: { ctas: LandingCtas }) {
 }
 
 export function LandingPage() {
-  const { state } = useFinanceData();
-  const hasLocalWorkspace = state.setupCompleted;
+  const { isAuthenticated, isLoading } = useAuth();
   const ctas: LandingCtas = {
-    primary: hasLocalWorkspace
-      ? { label: "Open Dashboard", to: "/dashboard" }
-      : { label: "Get started", to: "/setup" },
-    secondary: hasLocalWorkspace
-      ? { label: "Continue Budgeting", to: "/start" }
+    primary: isAuthenticated
+      ? { label: "Go to Dashboard", to: "/dashboard" }
+      : { label: "Sign up", to: "/auth/signup" },
+    secondary: isAuthenticated
+      ? { label: "Go to Dashboard", to: "/dashboard" }
       : { label: "Log in", to: "/auth/login" },
   };
 
@@ -358,8 +361,12 @@ export function LandingPage() {
           <span>FinanceOS</span>
         </Link>
         <nav className="financeos-landing-actions" aria-label="Public navigation">
-          <LandingButton to="/auth/login" variant="outline">Login</LandingButton>
-          <LandingButton to="/auth/signup" variant="primary">Sign up</LandingButton>
+          {isLoading ? <span role="status">Loading session…</span> : isAuthenticated ? (
+            <LandingButton to="/dashboard" variant="primary">Go to Dashboard</LandingButton>
+          ) : <>
+            <LandingButton to="/auth/login" variant="outline">Login</LandingButton>
+            <LandingButton to="/auth/signup" variant="primary">Sign up</LandingButton>
+          </>}
         </nav>
       </header>
 

@@ -67,7 +67,14 @@ try {
   for (const width of [375, 390, 414, 1440]) {
     await navigate('/', width, 844);
     const links = await evaluate(`({ login: document.querySelector('header a[href="/auth/login"]')?.textContent, signup: document.querySelector('header a[href="/auth/signup"]')?.textContent, overflow: document.documentElement.scrollWidth > innerWidth })`);
-    check(links.login === 'Login' && links.signup === 'Sign up' && !links.overflow, `landing header links ${width}px`);
+      check(links.login === 'Login' && links.signup === 'Sign up' && !links.overflow, `landing header links ${width}px`);
+      check(await evaluate(`[...document.querySelectorAll('.financeos-landing a')].every(a => ['/', '/auth/login', '/auth/signup'].includes(a.getAttribute('href'))) && [...document.querySelectorAll('main a')].filter(a => !/log in/i.test(a.textContent)).every(a => a.getAttribute('href') === '/auth/signup')`), `every signed-out account CTA uses signup ${width}px`);
+      check(await evaluate(`!document.body.textContent.includes('Developer Preview') && !document.querySelector('a[href="/setup"]')`), `landing has no preview or unauthenticated setup entry ${width}px`);
+  }
+  await navigate('/auth/signup', 390, 844);
+  for (const route of ['/dashboard', '/setup', '/settings', '/income', '/expenses', '/reports', '/start', '/annual-planner', '/transactions', '/pending-transactions', '/add-transaction', '/categories', '/expected-amounts', '/payment-plans', '/tracker', '/saved-budgets', '/notifications', '/help', '/planner', '/pending', '/expected', '/tracker-ui']) {
+    await navigate(route, 1440, 1000);
+    check(await evaluate(`location.pathname === '/auth/login' && !document.querySelector('.financeos-premium')`), `signed-out protection: ${route}`);
   }
   await navigate('/auth/signup', 390, 844);
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
@@ -92,11 +99,22 @@ try {
     const { default: React } = await import(dependency('react'));
     const { default: ReactDOM } = await import(dependency('react-dom_client'));
     const { createRoot } = ReactDOM;
-    const { MemoryRouter, Routes, Route } = await import(dependency('react-router'));
+    const { MemoryRouter, Routes, Route, Navigate, useLocation } = await import(dependency('react-router'));
     const hookSource = await (await fetch('/src/hooks/useAuth.ts')).text();
     const providerUrl = hookSource.split('from "').find(part => part.startsWith('/src/providers/AuthProvider')).split('"')[0];
     const { AuthContext } = await import(providerUrl);
     const { AuthPage } = await import('/src/app/components/screens/AuthPage.tsx');
+    const { AppShell } = await import('/src/app/components/layout/AppShell.tsx');
+    const { LandingPage } = await import('/src/app/components/screens/LandingPage.tsx');
+    const { Dashboard } = await import('/src/app/components/screens/Dashboard.tsx');
+    const { Settings } = await import('/src/app/components/screens/Settings.tsx');
+    const { VerifyAccount } = await import('/src/app/components/screens/VerifyAccount.tsx');
+    const gateSource = await (await fetch('/src/app/components/auth/RequireVerified.tsx')).text();
+    const profileUrl = gateSource.split('from "').find(part => part.startsWith('/src/hooks/useProfile')).split('"')[0];
+    const { ProfileContext } = await import(profileUrl);
+    const shellSource = await (await fetch('/src/app/components/layout/AppShell.tsx')).text();
+    const storeUrl = shellSource.split('from "').find(part => part.startsWith('/src/app/lib/financeStore')).split('"')[0];
+    const { useFinanceData } = await import(storeUrl);
     const host = document.createElement('div'); document.body.append(host);
     document.querySelector('#root').style.display = 'none';
     const root = createRoot(host);
@@ -109,6 +127,37 @@ try {
     };
     window.authHarness('signup');
     window.authHost = host;
+    function LocalProbe() {
+      const { state } = useFinanceData();
+      window.testLocalState = state;
+      return null;
+    }
+    let accessRevision = 0;
+    window.accessHarness = (path, authenticated, loading = false, verified = true) => {
+      function AccessSession() {
+        const location = useLocation();
+        const [logoutComplete, setLogoutComplete] = React.useState(false);
+        React.useEffect(() => { if (logoutComplete && location.pathname === '/') setLogoutComplete(false); }, [logoutComplete, location.pathname]);
+        const [signedIn, setSignedIn] = React.useState(authenticated);
+        const context = { user: signedIn ? { id: 'offline-test-user', email: 'account@example.com' } : null, session: null,
+          isAuthenticated: signedIn, isLoading: loading, error: null,
+          signOut: async () => { window.logoutCalls = (window.logoutCalls || 0) + 1; await new Promise(resolve => setTimeout(resolve, 80)); setSignedIn(false); setLogoutComplete(true); return { ok: true, error: null }; } };
+        const [profile, setProfile] = React.useState({ account_verified_at: verified ? new Date().toISOString() : null, verification_channel: null });
+        return React.createElement(AuthContext.Provider, { value: context },
+          logoutComplete && location.pathname !== '/' ? React.createElement(Navigate, { to: '/', replace: true }) :
+          React.createElement(ProfileContext.Provider, { value: { profile, isLoading: false, error: null, refreshProfile: async () => { if (window.dbVerified) setProfile({ ...profile, account_verified_at: new Date().toISOString() }); }, updateProfile: async updates => { window.savedPreference = updates.verification_channel; setProfile({ ...profile, ...updates }); return { ok: true }; } } },
+          React.createElement(React.Fragment, null, React.createElement(Routes, null,
+            React.createElement(Route, { element: React.createElement(AppShell) },
+              React.createElement(Route, { path: '/', element: React.createElement(LandingPage) }),
+              React.createElement(Route, { path: '/auth/login', element: React.createElement(AuthPage, { mode: 'login' }) }),
+              React.createElement(Route, { path: '/auth/verify', element: React.createElement(VerifyAccount) }),
+              React.createElement(Route, { path: '/dashboard', element: React.createElement(React.Fragment, null, React.createElement(LocalProbe), React.createElement(Dashboard)) }),
+              React.createElement(Route, { path: '/settings', element: React.createElement(Settings) })
+            )
+          ))));
+      }
+      root.render(React.createElement(MemoryRouter, { key: ++accessRevision, initialEntries: [path] }, React.createElement(AccessSession)));
+    };
   })()`);
   await pause(200);
   await evaluate(`(() => { const f = window.authHost.querySelector('form'); for (const [name,value] of Object.entries({ fullName: '  Test Person  ', email: 'test@example.com', password: 'a-test-password', confirmation: 'different' })) f.elements.namedItem(name).value = value; f.requestSubmit(); })()`);
@@ -138,6 +187,69 @@ try {
   await evaluate(`window.authHarness('signup', { signUp: async () => ({ ok: false, data: null, error: { code: 'weak_password', message: 'Use a longer password.' } }) })`); await pause(100);
   await evaluate(`(() => { const form = window.authHost.querySelector('form'); for (const [name, value] of Object.entries({ fullName: 'Test Person', email: 'test@example.com', password: 'short', confirmation: 'short' })) form.elements.namedItem(name).value = value; form.requestSubmit(); })()`); await pause(100);
   check(await evaluate(`window.authHost.querySelector('#auth-password').getAttribute('aria-invalid') === 'true' && window.authHost.querySelector('#auth-password-error').textContent === 'Use a longer password.'`), 'server password policy feedback is associated with password field');
+  await evaluate(`localStorage.setItem('financeos:dev-preview-enabled', 'true'); window.accessHarness('/dashboard', true, true)`); await pause(100);
+  check(await evaluate(`window.authHost.textContent.includes('Loading your session') && !window.authHost.querySelector('.financeos-premium')`), 'protected UI waits for session initialization');
+  await evaluate(`window.accessHarness('/dashboard', true, false, false)`); await pause(200);
+  check(await evaluate(`window.authHost.textContent.includes('Verify your account') && !window.authHost.querySelector('.financeos-premium') && window.authHost.querySelector('input[value="email"]').checked`), 'unverified account routed to email verification selection');
+  check(await evaluate(`window.authHost.textContent.includes('a••••@example.com') && !window.authHost.textContent.includes('account@example.com')`), 'verification masks email');
+  check(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), 'verification mobile layout has no horizontal overflow');
+  await screenshot('verification-mobile');
+  await evaluate(`window.authHost.querySelector('input[value="phone"]').click()`); await pause(100);
+  check(await evaluate(`!!window.authHost.querySelector('#verification-phone') && window.authHost.textContent.includes('SMS verification is currently unavailable')`), 'phone selection discloses unavailable SMS');
+  await evaluate(`Array.from(window.authHost.querySelectorAll('button')).find(b => b.textContent === 'Log out').click()`); await pause(500);
+  check(await evaluate(`!!window.authHost.querySelector('header a[href="/auth/login"]')`), 'logout accessible from verification onboarding');
+  await evaluate(`window.accessHarness('/dashboard', true)`); await pause(300);
+  check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.testLocalState.transactions.length === 0 && window.authHost.textContent.includes('Local browser workspace.') && !/Developer Preview|Preview Data Enabled/.test(window.authHost.textContent)`), 'authenticated dashboard is empty, explicitly local, and ignores old preview flag');
+  await evaluate(`window.authHost.querySelector('header a[href="/settings"]').click()`); await pause(250);
+  check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.authHost.textContent.includes('Settings') && !window.authHost.querySelector('.auth-form-heading')`), 'authenticated client navigation preserves access');
+  await evaluate(`window.accessHarness('/', true, true)`); await pause(150);
+  check(await evaluate(`!window.authHost.querySelector('a[href="/auth/login"], a[href="/auth/signup"], a[href="/dashboard"]') && window.authHost.textContent.includes('Loading session')`), 'landing waits for session before showing account CTAs');
+  await evaluate(`window.accessHarness('/', true)`); await pause(150);
+  check(await evaluate(`window.authHost.querySelector('header a[href="/dashboard"]')?.textContent === 'Go to Dashboard' && !window.authHost.querySelector('header a[href="/auth/login"]')`), 'authenticated landing navigation');
+  await evaluate(`window.accessHarness('/settings', true)`); await pause(150);
+  check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && !/Enable Preview Data|Preview Data Enabled/.test(window.authHost.textContent)`), 'authenticated settings without preview controls');
+  await evaluate(`(() => { const saved = JSON.parse(localStorage.getItem('financeos:app-data:v1')); saved.transactions = [{ id: 'local-preservation-test', name: 'Existing local entry', amount: 123, type: 'income', category: 'Other', date: new Date().toISOString().slice(0,10), status: 'paid' }]; localStorage.setItem('financeos:app-data:v1', JSON.stringify(saved)); window.accessHarness('/dashboard', true); })()`); await pause(150);
+  check(await evaluate(`window.testLocalState.transactions.length === 1 && window.testLocalState.transactions[0].id === 'local-preservation-test'`), 'session remount preserves existing local records without mock merging');
+  await evaluate(`window.authHost.querySelector('[aria-label="Profile menu"]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse', ctrlKey: false }))`); await pause(150);
+  await evaluate(`window.logoutCalls = 0; const logout = Array.from(document.querySelectorAll('[role="menuitem"]')).find(el => el.textContent.includes('Log out')); logout.click(); logout.click()`); await pause(200);
+  check(await evaluate(`window.logoutCalls === 1`), 'dropdown logout prevents duplicate requests');
+  check(await evaluate(`!!window.authHost.querySelector('header a[href="/auth/login"]') && !window.authHost.querySelector('.financeos-premium')`), 'profile logout returns to public landing');
+  await evaluate(`window.accessHarness('/dashboard', false)`); await pause(150);
+  check(await evaluate(`!!window.authHost.querySelector('.auth-form-heading') && !window.authHost.querySelector('.financeos-premium') && JSON.parse(localStorage.getItem('financeos:app-data:v1')).transactions[0].id === 'local-preservation-test'`), 'signed-out access blocked without deleting local records');
+  await evaluate(`(async () => {
+    const source = await (await fetch('/src/app/components/screens/VerifyAccount.tsx')).text();
+    const imported = prefix => source.split('from "').find(part => part.startsWith(prefix)).split('"')[0];
+    const { verificationDelivery } = await import(imported('/src/lib/verification'));
+    verificationDelivery.email = true; verificationDelivery.phone = true;
+    const serviceSource = await (await fetch(imported('/src/services/authService'))).text();
+    const clientUrl = serviceSource.split('from "').find(part => part.startsWith('/src/lib/supabaseClient')).split('"')[0];
+    const { supabase } = await import(clientUrl);
+    supabase.auth.getUser = async () => ({ data: { user: { id: 'offline-test-user', email: 'account@example.com' } }, error: null });
+    supabase.auth.signInWithOtp = async args => { window.sendCalls = (window.sendCalls || 0) + 1; window.emailPayload = args; return { error: null }; };
+    supabase.auth.updateUser = async args => { window.sendCalls = (window.sendCalls || 0) + 1; window.phonePayload = args; return { error: null }; };
+    supabase.auth.verifyOtp = async args => { window.otpPayload = args; return args.token === '123456' ? { data: { user: { id: 'offline-test-user' } }, error: null } : { error: { code: 'otp_expired' } }; };
+    supabase.rpc = async (name, args) => { window.dbVerified = true; return { data: { account_verified_at: new Date().toISOString() }, error: null }; };
+    window.accessHarness('/auth/verify', true, false, false);
+  })()`); await pause(200);
+  await evaluate(`window.authHost.querySelector('form').requestSubmit(); window.authHost.querySelector('form').requestSubmit()`); await pause(200);
+  check(await evaluate(`window.sendCalls === 1 && window.savedPreference === 'email' && window.emailPayload.options.shouldCreateUser === false && !!window.authHost.querySelector('#verification-code')`), 'email send persists preference and prevents duplicate sends');
+  check(await evaluate(`[...window.authHost.querySelectorAll('button')].some(b => b.textContent.startsWith('Resend in') && b.disabled)`), 'resend countdown disables early resend');
+  await evaluate(`var input = window.authHost.querySelector('#verification-code'); const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; setter.call(input, '000000'); input.dispatchEvent(new Event('input', { bubbles: true }));`); await pause(50);
+  await evaluate(`window.authHost.querySelector('form').requestSubmit()`); await pause(150);
+  check(await evaluate(`window.authHost.textContent.includes('invalid or has expired') && !window.dbVerified`), 'invalid OTP stays unverified');
+  await evaluate(`var input = window.authHost.querySelector('#verification-code'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '123456'); input.dispatchEvent(new Event('input', { bubbles: true }));`); await pause(50);
+  await evaluate(`window.authHost.querySelector('form').requestSubmit()`); await pause(200);
+  check(await evaluate(`window.dbVerified && !!window.authHost.querySelector('.financeos-premium')`), 'valid email OTP and persisted account timestamp unlock dashboard');
+  await evaluate(`window.dbVerified = false; window.accessHarness('/auth/verify', true, false, false)`); await pause(150);
+  await evaluate(`window.authHost.querySelector('input[value="phone"]').click()`); await pause(50);
+  await evaluate(`window.authHost.querySelector('form').requestSubmit()`); await pause(150);
+  check(await evaluate(`window.authHost.textContent.includes('Include your country code') && !window.phonePayload`), 'invalid phone rejected without sending');
+  await evaluate(`var input = window.authHost.querySelector('#verification-phone'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '+1 (212) 555-1234'); input.dispatchEvent(new Event('input', { bubbles: true }));`); await pause(50);
+  await evaluate(`window.authHost.querySelector('form').requestSubmit()`); await pause(150);
+  check(await evaluate(`window.savedPreference === 'phone' && window.phonePayload.phone === '+12125551234' && !!window.authHost.querySelector('#verification-code')`), 'phone send persists preference and normalizes E.164');
+  await evaluate(`var input = window.authHost.querySelector('#verification-code'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '123456'); input.dispatchEvent(new Event('input', { bubbles: true }));`); await pause(50);
+  await evaluate(`window.authHost.querySelector('form').requestSubmit()`); await pause(200);
+  check(await evaluate(`window.otpPayload.type === 'phone_change' && window.dbVerified && !!window.authHost.querySelector('.financeos-premium')`), 'phone OTP verifies same account and unlocks dashboard');
   console.log('Screenshots: ' + dir);
 } finally {
   await send('Browser.close').catch(() => {});

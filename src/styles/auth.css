@@ -69,6 +69,16 @@
 .auth-form-heading { margin-bottom: 34px; }
 .financeos-auth fieldset { display: grid; gap: 20px; border: 0; padding: 0; margin: 0; min-width: 0; }
 .auth-field { min-width: 0; }
+.verification-options { display: grid; gap: 12px; margin-bottom: 24px; }
+.verification-option { display: flex; align-items: center; gap: 12px; padding: 18px; border: 1px solid #30332e; border-radius: 12px; background: #080a08; cursor: pointer; }
+.verification-option:has(input:checked) { border-color: #c6ff00; }
+.verification-option input { width: 16px; height: 16px; accent-color: #c6ff00; }
+.verification-option span { min-width: 0; }
+.verification-option strong, .verification-option small { display: block; }
+.verification-option small { color: #a8b3a3; margin-top: 6px; overflow-wrap: anywhere; }
+.financeos-auth .verification-code { text-align: center; font-size: 26px; letter-spacing: .45em; }
+.verification-actions { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 24px; font-size: 13px; color: #a8b3a3; }
+.verification-actions button { padding-block: 8px; text-decoration: underline; text-underline-offset: 4px; }
 .auth-field label { display: block; margin-bottom: 9px; font-size: 12px; font-weight: 500; color: #eef2e9; }
 .auth-input-wrap { position: relative; }
 .auth-field input { display: block; width: 100%; height: 52px; padding: 0 15px; border: 1px solid var(--auth-border); border-radius: 9px; background: var(--auth-panel); color: var(--auth-text); font-size: 16px; line-height: normal; transition: border-color 180ms ease; }
