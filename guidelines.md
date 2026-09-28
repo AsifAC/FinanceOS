@@ -1,5 +1,16 @@
 # FinanceOS Guidelines
 
+## Temporary Verification Gate Bypass - 2026-09-28
+
+- This section supersedes the mandatory onboarding behavior in the historical entries below. Verification infrastructure, services, profile fields and the existing migration remain intact.
+- `VITE_ACCOUNT_VERIFICATION_REQUIRED` controls the frontend gate and defaults to false. Enforcement is temporarily disabled for development/manual testing: authenticated users reach the dashboard without any verification timestamp write. Auth guards, login/signup redirects and logout remain active; Developer Preview stays removed.
+- When true, unverified accounts still go to `/auth/verify`, while verified accounts enter the application. Profile loading/errors continue to fail closed only while enforcement is on.
+- Email and SMS delivery remain disabled (`VITE_EMAIL_OTP_READY=false`, `VITE_PHONE_OTP_READY=false`). Direct verification access redirects authenticated users to the dashboard while enforcement is off. When on, unavailable methods are disabled and clearly labeled.
+- `.env.example` was absent following committed deletion in `fe45d07`; restored as a credential-free template with empty Supabase URL/anon key and all three flags false. No `.env.local` values were copied or printed.
+- Production should set `VITE_ACCOUNT_VERIFICATION_REQUIRED=true` after configuring and manually testing a delivery provider. Restart/rebuild after flag changes. No Supabase, Auth-provider, RLS, migration or backend data changes are part of this bypass.
+- Step 8 / expected_transactions remains paused.
+- Validation: typecheck, production build, 23 offline service tests, six disposable database verification checks, the Auth/browser/routing/verification suite and `git diff --check` passed. Browser coverage includes both enforcement modes, unchanged unverified profile state during bypass, disabled delivery controls, login/signup redirects and logout. Chrome required an outside-sandbox retry; existing bundle-size, experimental type-stripping and line-ending warnings remain. No live Auth or delivery tests were performed.
+
 ## Verification Onboarding Extension - 2026-09-26
 
 - Preserves the uncommitted Developer Preview removal below. All public landing account-entry CTAs use signup while signed out except explicit Login; signed-in CTAs use dashboard. Session initialization precedes CTA decisions.

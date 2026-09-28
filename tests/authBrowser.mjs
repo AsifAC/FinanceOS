@@ -110,6 +110,11 @@ try {
     const { Settings } = await import('/src/app/components/screens/Settings.tsx');
     const { VerifyAccount } = await import('/src/app/components/screens/VerifyAccount.tsx');
     const gateSource = await (await fetch('/src/app/components/auth/RequireVerified.tsx')).text();
+    const verificationUrl = gateSource.split('from "').find(part => part.startsWith('/src/lib/verification')).split('"')[0];
+    window.verificationConfig = await import(verificationUrl);
+    window.verificationConfig.verificationPolicy.required = false;
+    window.verificationConfig.verificationDelivery.email = false;
+    window.verificationConfig.verificationDelivery.phone = false;
     const profileUrl = gateSource.split('from "').find(part => part.startsWith('/src/hooks/useProfile')).split('"')[0];
     const { ProfileContext } = await import(profileUrl);
     const shellSource = await (await fetch('/src/app/components/layout/AppShell.tsx')).text();
@@ -133,9 +138,12 @@ try {
       return null;
     }
     let accessRevision = 0;
-    window.accessHarness = (path, authenticated, loading = false, verified = true) => {
+    window.accessHarness = (path, authenticated, loading = false, verified = true, profileState = {}) => {
+      window.accessPaths = [];
       function AccessSession() {
         const location = useLocation();
+        window.accessPath = location.pathname;
+        window.accessPaths.push(location.pathname);
         const [logoutComplete, setLogoutComplete] = React.useState(false);
         React.useEffect(() => { if (logoutComplete && location.pathname === '/') setLogoutComplete(false); }, [logoutComplete, location.pathname]);
         const [signedIn, setSignedIn] = React.useState(authenticated);
@@ -143,13 +151,15 @@ try {
           isAuthenticated: signedIn, isLoading: loading, error: null,
           signOut: async () => { window.logoutCalls = (window.logoutCalls || 0) + 1; await new Promise(resolve => setTimeout(resolve, 80)); setSignedIn(false); setLogoutComplete(true); return { ok: true, error: null }; } };
         const [profile, setProfile] = React.useState({ account_verified_at: verified ? new Date().toISOString() : null, verification_channel: null });
+        window.accessProfile = profile;
         return React.createElement(AuthContext.Provider, { value: context },
           logoutComplete && location.pathname !== '/' ? React.createElement(Navigate, { to: '/', replace: true }) :
-          React.createElement(ProfileContext.Provider, { value: { profile, isLoading: false, error: null, refreshProfile: async () => { if (window.dbVerified) setProfile({ ...profile, account_verified_at: new Date().toISOString() }); }, updateProfile: async updates => { window.savedPreference = updates.verification_channel; setProfile({ ...profile, ...updates }); return { ok: true }; } } },
+          React.createElement(ProfileContext.Provider, { value: { profile, isLoading: false, error: null, ...profileState, refreshProfile: async () => { if (window.dbVerified) setProfile({ ...profile, account_verified_at: new Date().toISOString() }); }, updateProfile: async updates => { window.savedPreference = updates.verification_channel; setProfile({ ...profile, ...updates }); return { ok: true }; } } },
           React.createElement(React.Fragment, null, React.createElement(Routes, null,
             React.createElement(Route, { element: React.createElement(AppShell) },
               React.createElement(Route, { path: '/', element: React.createElement(LandingPage) }),
               React.createElement(Route, { path: '/auth/login', element: React.createElement(AuthPage, { mode: 'login' }) }),
+              React.createElement(Route, { path: '/auth/signup', element: React.createElement(AuthPage, { mode: 'signup' }) }),
               React.createElement(Route, { path: '/auth/verify', element: React.createElement(VerifyAccount) }),
               React.createElement(Route, { path: '/dashboard', element: React.createElement(React.Fragment, null, React.createElement(LocalProbe), React.createElement(Dashboard)) }),
               React.createElement(Route, { path: '/settings', element: React.createElement(Settings) })
@@ -189,17 +199,23 @@ try {
   check(await evaluate(`window.authHost.querySelector('#auth-password').getAttribute('aria-invalid') === 'true' && window.authHost.querySelector('#auth-password-error').textContent === 'Use a longer password.'`), 'server password policy feedback is associated with password field');
   await evaluate(`localStorage.setItem('financeos:dev-preview-enabled', 'true'); window.accessHarness('/dashboard', true, true)`); await pause(100);
   check(await evaluate(`window.authHost.textContent.includes('Loading your session') && !window.authHost.querySelector('.financeos-premium')`), 'protected UI waits for session initialization');
-  await evaluate(`window.accessHarness('/dashboard', true, false, false)`); await pause(200);
-  check(await evaluate(`window.authHost.textContent.includes('Verify your account') && !window.authHost.querySelector('.financeos-premium') && window.authHost.querySelector('input[value="email"]').checked`), 'unverified account routed to email verification selection');
-  check(await evaluate(`window.authHost.textContent.includes('a••••@example.com') && !window.authHost.textContent.includes('account@example.com')`), 'verification masks email');
+  for (const path of ['/dashboard', '/auth/login', '/auth/signup', '/auth/verify']) {
+    await evaluate(`window.accessHarness('${path}', true, false, false)`); await pause(250);
+    check(await evaluate(`window.accessPath === '/dashboard' && !!window.authHost.querySelector('.financeos-premium') && window.accessProfile.account_verified_at === null`), 'enforcement off: unverified account reaches dashboard from ' + path);
+    if (path !== '/auth/verify') check(await evaluate(`!window.accessPaths.includes('/auth/verify')`), 'enforcement off: no verification redirect from ' + path);
+  }
+  await evaluate(`window.accessHarness('/dashboard', true, false, false, { isLoading: true, error: { message: 'Profile unavailable' } })`); await pause(200);
+  check(await evaluate(`window.accessPath === '/dashboard' && !!window.authHost.querySelector('.financeos-premium')`), 'enforcement off: profile loading/errors do not block dashboard');
+  await evaluate(`window.verificationConfig.verificationPolicy.required = true; window.accessHarness('/dashboard', true, false, false)`); await pause(200);
+  check(await evaluate(`window.accessPath === '/auth/verify' && window.authHost.textContent.includes('Verify your account') && !window.authHost.querySelector('.financeos-premium')`), 'enforcement on: unverified account redirects to verification');
+  check(await evaluate(`[...window.authHost.querySelectorAll('input[name="channel"]')].length === 2 && [...window.authHost.querySelectorAll('input[name="channel"]')].every(input => input.disabled && !input.checked) && window.authHost.querySelector('.auth-submit').disabled && !window.authHost.querySelector('#verification-phone')`), 'both delivery flags off: methods cannot be selected and sending is disabled');
+  check(await evaluate(`window.authHost.textContent.includes('Email verification is currently unavailable') && window.authHost.textContent.includes('SMS verification is currently unavailable')`), 'unavailable delivery is explained honestly');
   check(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), 'verification mobile layout has no horizontal overflow');
   await screenshot('verification-mobile');
-  await evaluate(`window.authHost.querySelector('input[value="phone"]').click()`); await pause(100);
-  check(await evaluate(`!!window.authHost.querySelector('#verification-phone') && window.authHost.textContent.includes('SMS verification is currently unavailable')`), 'phone selection discloses unavailable SMS');
   await evaluate(`Array.from(window.authHost.querySelectorAll('button')).find(b => b.textContent === 'Log out').click()`); await pause(500);
   check(await evaluate(`!!window.authHost.querySelector('header a[href="/auth/login"]')`), 'logout accessible from verification onboarding');
   await evaluate(`window.accessHarness('/dashboard', true)`); await pause(300);
-  check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.testLocalState.transactions.length === 0 && window.authHost.textContent.includes('Local browser workspace.') && !/Developer Preview|Preview Data Enabled/.test(window.authHost.textContent)`), 'authenticated dashboard is empty, explicitly local, and ignores old preview flag');
+  check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.testLocalState.transactions.length === 0 && window.authHost.textContent.includes('Local browser workspace.') && !/Developer Preview|Preview Data Enabled/.test(window.authHost.textContent)`), 'enforcement on: verified account reaches dashboard, which is empty, explicitly local, and ignores old preview flag');
   await evaluate(`window.authHost.querySelector('header a[href="/settings"]').click()`); await pause(250);
   check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.authHost.textContent.includes('Settings') && !window.authHost.querySelector('.auth-form-heading')`), 'authenticated client navigation preserves access');
   await evaluate(`window.accessHarness('/', true, true)`); await pause(150);
@@ -208,7 +224,7 @@ try {
   check(await evaluate(`window.authHost.querySelector('header a[href="/dashboard"]')?.textContent === 'Go to Dashboard' && !window.authHost.querySelector('header a[href="/auth/login"]')`), 'authenticated landing navigation');
   await evaluate(`window.accessHarness('/settings', true)`); await pause(150);
   check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && !/Enable Preview Data|Preview Data Enabled/.test(window.authHost.textContent)`), 'authenticated settings without preview controls');
-  await evaluate(`(() => { const saved = JSON.parse(localStorage.getItem('financeos:app-data:v1')); saved.transactions = [{ id: 'local-preservation-test', name: 'Existing local entry', amount: 123, type: 'income', category: 'Other', date: new Date().toISOString().slice(0,10), status: 'paid' }]; localStorage.setItem('financeos:app-data:v1', JSON.stringify(saved)); window.accessHarness('/dashboard', true); })()`); await pause(150);
+  await evaluate(`(() => { const saved = JSON.parse(localStorage.getItem('financeos:app-data:v1')); saved.transactions = [{ id: 'local-preservation-test', name: 'Existing local entry', amount: 123, type: 'income', category: 'Other', date: new Date().toISOString().slice(0,10), status: 'paid' }]; localStorage.setItem('financeos:app-data:v1', JSON.stringify(saved)); window.verificationConfig.verificationPolicy.required = false; window.accessHarness('/dashboard', true, false, false); })()`); await pause(150);
   check(await evaluate(`window.testLocalState.transactions.length === 1 && window.testLocalState.transactions[0].id === 'local-preservation-test'`), 'session remount preserves existing local records without mock merging');
   await evaluate(`window.authHost.querySelector('[aria-label="Profile menu"]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse', ctrlKey: false }))`); await pause(150);
   await evaluate(`window.logoutCalls = 0; const logout = Array.from(document.querySelectorAll('[role="menuitem"]')).find(el => el.textContent.includes('Log out')); logout.click(); logout.click()`); await pause(200);
@@ -221,6 +237,7 @@ try {
     const imported = prefix => source.split('from "').find(part => part.startsWith(prefix)).split('"')[0];
     const { verificationDelivery } = await import(imported('/src/lib/verification'));
     verificationDelivery.email = true; verificationDelivery.phone = true;
+    window.verificationConfig.verificationPolicy.required = true;
     const serviceSource = await (await fetch(imported('/src/services/authService'))).text();
     const clientUrl = serviceSource.split('from "').find(part => part.startsWith('/src/lib/supabaseClient')).split('"')[0];
     const { supabase } = await import(clientUrl);
@@ -231,6 +248,7 @@ try {
     supabase.rpc = async (name, args) => { window.dbVerified = true; return { data: { account_verified_at: new Date().toISOString() }, error: null }; };
     window.accessHarness('/auth/verify', true, false, false);
   })()`); await pause(200);
+  check(await evaluate(`window.authHost.textContent.includes('a••••@example.com') && !window.authHost.textContent.includes('account@example.com')`), 'available email verification masks email');
   await evaluate(`window.authHost.querySelector('form').requestSubmit(); window.authHost.querySelector('form').requestSubmit()`); await pause(200);
   check(await evaluate(`window.sendCalls === 1 && window.savedPreference === 'email' && window.emailPayload.options.shouldCreateUser === false && !!window.authHost.querySelector('#verification-code')`), 'email send persists preference and prevents duplicate sends');
   check(await evaluate(`[...window.authHost.querySelectorAll('button')].some(b => b.textContent.startsWith('Resend in') && b.disabled)`), 'resend countdown disables early resend');

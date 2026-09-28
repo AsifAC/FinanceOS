@@ -5,7 +5,15 @@ import test from 'node:test';
 
 let sequence = 0;
 const importSource = source => import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}#${sequence++}`);
-const utils = await importSource((await readFile(new URL('../src/lib/verification.ts', import.meta.url), 'utf8')).replaceAll('import.meta.env.VITE_EMAIL_OTP_READY', '"true"').replaceAll('import.meta.env.VITE_PHONE_OTP_READY', '"true"'));
+const utils = await importSource((await readFile(new URL('../src/lib/verification.ts', import.meta.url), 'utf8')).replaceAll('import.meta.env.VITE_ACCOUNT_VERIFICATION_REQUIRED', 'undefined').replaceAll('import.meta.env.VITE_EMAIL_OTP_READY', '"true"').replaceAll('import.meta.env.VITE_PHONE_OTP_READY', '"true"'));
+test('verification enforcement defaults off and requires explicit true', async () => {
+  const source = await readFile(new URL('../src/lib/verification.ts', import.meta.url), 'utf8');
+  for (const value of [undefined, 'false', 'true', 'TRUE', '']) {
+    const config = await importSource(source.replaceAll('import.meta.env.VITE_ACCOUNT_VERIFICATION_REQUIRED', JSON.stringify(value) ?? 'undefined').replaceAll('import.meta.env.VITE_EMAIL_OTP_READY', 'undefined').replaceAll('import.meta.env.VITE_PHONE_OTP_READY', 'undefined'));
+    assert.equal(config.verificationPolicy.required, value === 'true');
+    assert.deepEqual(config.verificationDelivery, { email: false, phone: false });
+  }
+});
 async function authService(auth, delivery = { email: true, phone: true }) {
   globalThis.verificationMock = { auth };
   globalThis.verificationUtils = { ...utils, verificationDelivery: delivery };

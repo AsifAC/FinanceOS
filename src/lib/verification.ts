@@ -1,5 +1,10 @@
 export type VerificationChannel = "email" | "phone";
 
+// Frontend onboarding gate only; bypassing never changes verification state.
+export const verificationPolicy = {
+  required: import.meta.env.VITE_ACCOUNT_VERIFICATION_REQUIRED === "true",
+};
+
 // Deployment readiness switches, not security controls. Enable only after provider/template review.
 export const verificationDelivery = {
   email: import.meta.env.VITE_EMAIL_OTP_READY === "true",

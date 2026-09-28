@@ -2,8 +2,14 @@ import type { ReactNode } from "react";
 import { Navigate } from "react-router";
 import { useProfile } from "../../../hooks/useProfile";
 import { useLogout } from "../../../hooks/useLogout";
+import { verificationPolicy } from "../../../lib/verification";
 
 export function RequireVerified({ children }: { children: ReactNode }) {
+  if (!verificationPolicy.required) return <>{children}</>;
+  return <VerificationGate>{children}</VerificationGate>;
+}
+
+function VerificationGate({ children }: { children: ReactNode }) {
   const { profile, isLoading, error, refreshProfile } = useProfile();
   const { logout, isSigningOut, logoutError } = useLogout();
   if (isLoading) return <main className="min-h-screen bg-[#050505] p-8 text-[#F8FAFC]" role="status">Loading your account…</main>;

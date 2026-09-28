@@ -4,12 +4,17 @@ import { Mail, Smartphone } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useProfile } from "../../../hooks/useProfile";
 import { useLogout } from "../../../hooks/useLogout";
-import { maskEmail, normalizePhone, verificationDelivery, type VerificationChannel } from "../../../lib/verification";
+import { maskEmail, normalizePhone, verificationDelivery, verificationPolicy, type VerificationChannel } from "../../../lib/verification";
 import { requestVerification, verifyVerificationCode } from "../../../services/authService";
 import { completeAccountVerification } from "../../../services/profileService";
 import { AuthLayout } from "../auth/AuthLayout";
 
 export function VerifyAccount() {
+  if (!verificationPolicy.required) return <Navigate to="/dashboard" replace />;
+  return <VerificationForm />;
+}
+
+function VerificationForm() {
   const { user } = useAuth();
   const { profile, isLoading, error: profileError, refreshProfile, updateProfile } = useProfile();
   const { logout, isSigningOut, logoutError } = useLogout();
@@ -29,7 +34,8 @@ export function VerifyAccount() {
   useEffect(() => {
     if (!initialized.current && profile) {
       initialized.current = true;
-      setChannel(profile.verification_channel ?? "email");
+      const preferred = profile.verification_channel;
+      setChannel(preferred && verificationDelivery[preferred] ? preferred : verificationDelivery.email ? "email" : "phone");
     }
   }, [profile]);
   useEffect(() => { if (sent) codeInput.current?.focus(); }, [sent]);
@@ -50,7 +56,7 @@ export function VerifyAccount() {
     finally { pending.current = false; setBusy(false); }
   }
   function sendCode() {
-    if (Date.now() < retryAt) return;
+    if (Date.now() < retryAt || !verificationDelivery[channel]) return;
     void run(async () => {
       const normalized = normalizePhone(phone);
       if (channel === "phone" && !normalized) { setError("Include your country code, for example +12125551234."); return; }
@@ -79,17 +85,19 @@ export function VerifyAccount() {
   if (!isLoading && profile?.account_verified_at) return <Navigate to="/dashboard" replace />;
   return <AuthLayout mode="verify">
     <div className="auth-form-heading"><p className="auth-wordmark">FinanceOS /</p><h1>Verify your account</h1>
-      <p>Choose where you'd like to receive your verification code.</p></div>
+      <p>{verificationDelivery.email || verificationDelivery.phone
+        ? "Choose where you'd like to receive your verification code."
+        : "Account verification is currently unavailable. Email and SMS delivery have not been enabled yet."}</p></div>
     {isLoading && !busy ? <p role="status">Loading your account…</p> : <>
       {profileError && <p role="alert" className="auth-request-error">{profileError.message} <button onClick={() => void refreshProfile()}>Retry</button></p>}
       {!sent ? <form onSubmit={event => { event.preventDefault(); sendCode(); }}>
         <fieldset disabled={busy || isSigningOut || !!profileError}>
           <legend className="auth-sr-only">Verification method</legend>
           <div className="verification-options">
-            <label className="verification-option"><input type="radio" name="channel" value="email" checked={channel === "email"} onChange={() => { setChannel("email"); setError(null); }} /><Mail size={20} aria-hidden="true" /><span><strong>Email</strong><small>Send a code to {maskEmail(user?.email)}</small></span></label>
-            <label className="verification-option"><input type="radio" name="channel" value="phone" checked={channel === "phone"} onChange={() => { setChannel("phone"); setError(null); }} /><Smartphone size={20} aria-hidden="true" /><span><strong>Phone</strong><small>Send a text message to your mobile number</small></span></label>
+            <label className="verification-option"><input type="radio" name="channel" value="email" disabled={!verificationDelivery.email} checked={verificationDelivery.email && channel === "email"} onChange={() => { setChannel("email"); setError(null); }} /><Mail size={20} aria-hidden="true" /><span><strong>Email</strong><small>{verificationDelivery.email ? `Send a code to ${maskEmail(user?.email)}` : "Email verification is currently unavailable"}</small></span></label>
+            <label className="verification-option"><input type="radio" name="channel" value="phone" disabled={!verificationDelivery.phone} checked={verificationDelivery.phone && channel === "phone"} onChange={() => { setChannel("phone"); setError(null); }} /><Smartphone size={20} aria-hidden="true" /><span><strong>Phone</strong><small>{verificationDelivery.phone ? "Send a text message to your mobile number" : "SMS verification is currently unavailable"}</small></span></label>
           </div>
-          {channel === "phone" && <div className="auth-field"><label htmlFor="verification-phone">Mobile number</label><input id="verification-phone" type="tel" autoComplete="tel" placeholder="+12125551234" value={phone} onChange={event => setPhone(event.target.value)} aria-describedby="verification-phone-hint" /><p id="verification-phone-hint" className="auth-small">Include + and your country code.</p></div>}
+          {channel === "phone" && verificationDelivery.phone && <div className="auth-field"><label htmlFor="verification-phone">Mobile number</label><input id="verification-phone" type="tel" autoComplete="tel" placeholder="+12125551234" value={phone} onChange={event => setPhone(event.target.value)} aria-describedby="verification-phone-hint" /><p id="verification-phone-hint" className="auth-small">Include + and your country code.</p></div>}
           {!verificationDelivery[channel] && <p role="status" className="auth-small">{channel === "phone" ? "SMS" : "Email code"} verification is currently unavailable. Code delivery has not been enabled yet.</p>}
           <button className="auth-submit" disabled={busy || remaining > 0 || !verificationDelivery[channel]}>{busy ? "Sending…" : remaining ? `Try again in ${remaining}s` : "Send code"}</button>
         </fieldset>
