@@ -1,3 +1,4 @@
+import { FinanceOSLogo } from "../common/FinanceOSLogo";
 import { Link, NavLink } from "react-router";
 import {
   LayoutDashboard, Settings2, CalendarDays, CreditCard, Clock,
@@ -31,13 +32,10 @@ export function Sidebar() {
         <Link
           to="/"
           className="flex origin-left cursor-pointer items-center gap-2 rounded-lg transition duration-200 hover:scale-[1.01] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          aria-label="FinanceOS landing page"
+          aria-label="FinanceOS home"
         >
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-            <span className="text-white text-xs">$</span>
-          </div>
           <div>
-            <p className="text-sm leading-none text-slate-900" style={{ fontWeight: 700 }}>FinanceOS</p>
+            <FinanceOSLogo decorative />
             <p className="text-xs text-slate-500 mt-0.5">{activeYear} Budget</p>
           </div>
         </Link>

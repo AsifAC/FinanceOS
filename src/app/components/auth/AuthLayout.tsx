@@ -1,6 +1,7 @@
+import { FinanceOSLogo } from "../common/FinanceOSLogo";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { ArrowLeft, DollarSign } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { AuthVisual } from "./AuthVisual";
 import "../../../styles/auth.css";
 
@@ -10,8 +11,7 @@ export function AuthLayout({ mode, children }: { mode: "login" | "signup" | "ver
       <a href="#auth-content" className="auth-skip-link">Skip to form</a>
       <section className="auth-brand-panel" aria-label="FinanceOS">
         <Link to="/" className="auth-brand" aria-label="FinanceOS home">
-          <span className="auth-brand-mark"><DollarSign size={22} aria-hidden="true" /></span>
-          FinanceOS
+          <FinanceOSLogo decorative />
         </Link>
         <AuthVisual variant={mode === "verify" ? "signup" : mode} />
         <div className="auth-brand-copy">

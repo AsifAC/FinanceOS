@@ -3,7 +3,6 @@ import { Clock3 } from "lucide-react";
 import {
   formatDateInTimezone,
   formatTimeInTimezone,
-  getTimezoneAbbreviation,
   getTimezoneOffsetLabel,
 } from "../../lib/datePreferences";
 import { cn } from "../ui/utils";
@@ -30,7 +29,6 @@ export function DateTimeDisplay({
     year: "numeric",
   });
   const time = formatTimeInTimezone(now, timezone);
-  const abbreviation = getTimezoneAbbreviation(timezone, now);
   const offset = getTimezoneOffsetLabel(timezone, now);
 
   return (
@@ -45,7 +43,7 @@ export function DateTimeDisplay({
       </span>
       <span className="min-w-0">
         <span className="block truncate text-sm font-semibold text-[var(--financeos-text-primary)]">
-          {compact ? `${date} | ${time} ${abbreviation}` : `${date} | ${time} ${abbreviation}`}
+          {`${date} | ${time}`}
         </span>
         <span className="mt-0.5 block truncate text-[11px] leading-none text-[var(--financeos-text-muted)]">
           {timezone} · {offset}

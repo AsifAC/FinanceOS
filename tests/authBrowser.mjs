@@ -268,6 +268,54 @@ try {
   await evaluate(`var input = window.authHost.querySelector('#verification-code'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '123456'); input.dispatchEvent(new Event('input', { bubbles: true }));`); await pause(50);
   await evaluate(`window.authHost.querySelector('form').requestSubmit()`); await pause(200);
   check(await evaluate(`window.otpPayload.type === 'phone_change' && window.dbVerified && !!window.authHost.querySelector('.financeos-premium')`), 'phone OTP verifies same account and unlocks dashboard');
+  // Brand assets must load and fit at the supported viewport sizes without changing auth behavior.
+  for (const width of [320, 375, 430, 768, 1024, 1440]) {
+    await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+    for (const path of ['/', '/auth/login', '/auth/signup', '/dashboard', '/settings', '/auth/verify']) {
+      await evaluate(`window.verificationConfig.verificationPolicy.required = ${path === '/auth/verify'}; window.accessHarness('${path}', ${!['/', '/auth/login', '/auth/signup'].includes(path)}, false, false)`);
+      await pause(250);
+      const brand = await evaluate(`(() => {
+        const images = [...window.authHost.querySelectorAll('.financeos-brand-image img')];
+        const header = window.authHost.querySelector('header');
+        const home = window.authHost.querySelector('a[aria-label="FinanceOS home"]');
+        const bounds = element => element.getBoundingClientRect();
+        const pageWidth = document.documentElement.scrollWidth;
+        // Separate pre-existing page-content overflow from overflow introduced by branding.
+        images.forEach(img => { img.parentElement.style.display = 'none'; });
+        const widthWithoutBranding = document.documentElement.scrollWidth;
+        images.forEach(img => { img.parentElement.style.removeProperty('display'); });
+        return {
+          count: images.length,
+          loaded: images.every(img => img.complete && img.naturalWidth > 0),
+          sized: images.every(img => { const box = bounds(img); return box.width > 0 && img.offsetHeight >= 28 && img.offsetHeight <= 36 && box.left >= -1 && box.right <= innerWidth + 1 && getComputedStyle(img).objectFit === 'cover'; }),
+          correct: images.every(img => { const compact = img.parentElement.classList.contains('financeos-brand-image-compact'); const icon = img.parentElement.classList.contains('financeos-brand-image-icon') || innerWidth <= (compact ? 1279 : 639); return img.currentSrc.endsWith(icon ? '/branding/fOS_favicon.png' : '/branding/fOS_logo.png'); }),
+          overlap: header && home ? [...header.querySelectorAll('a, button')].filter(el => el !== home && !home.contains(el)).some(el => { const a = bounds(home), b = bounds(el); return b.width > 0 && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; }) : false,
+          overflow: pageWidth > Math.max(innerWidth, widthWithoutBranding) || (header && [...header.querySelectorAll('a, button')].some(el => { const box = bounds(el); return box.width > 0 && (box.left < 0 || box.right > document.documentElement.clientWidth + 1); })),
+          dimensions: { viewport: innerWidth, document: pageWidth, withoutBranding: widthWithoutBranding, header: header && [header.clientWidth, header.scrollWidth] },
+          oldMark: !!window.authHost.querySelector('.auth-brand-mark, .financeos-landing-logo, a[aria-label="FinanceOS home"] svg'),
+        };
+      })()`);
+      if (brand.overflow || !brand.sized) { await screenshot('branding-overflow'); console.log('Overflow screenshot: ' + dir); }
+      check(brand.count > 0 && brand.loaded && brand.sized && brand.correct && !brand.overlap && !brand.overflow && !brand.oldMark, `official branding fits ${path} at ${width}px: ${JSON.stringify(brand)}`);
+      if ([320, 1440].includes(width)) await screenshot('branding-' + (path.split('/').pop() || 'landing') + '-' + width);
+    }
+  }
+  check(await evaluate(`document.querySelector('link[rel="icon"]')?.getAttribute('href') === '/branding/fOS_favicon.png' && document.title.includes('FinanceOS')`), 'official favicon and FinanceOS browser title');
+  for (const width of [375, 768, 1024, 1440]) {
+    await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await evaluate(`window.verificationConfig.verificationPolicy.required = false; window.accessHarness('/dashboard', true, false, false); window.scrollTo(0, 0)`); await pause(250);
+    check(await evaluate(`window.authHost.querySelectorAll('.financeos-brand-image').length === 1 && window.authHost.querySelectorAll('button[aria-label="Planning period"]').length === 1 && !window.authHost.querySelector('button[aria-label="Dashboard month"]') && window.authHost.querySelectorAll('.financeos-topnav-clock').length === 1`), 'dashboard has one logo, month control, and clock at ' + width);
+    check(await evaluate(`document.documentElement.scrollWidth <= innerWidth && window.authHost.querySelector('.financeos-topnav').getBoundingClientRect().height <= (innerWidth < 640 ? 130 : 80) && window.authHost.querySelector('.financeos-workspace-note').getBoundingClientRect().height < 100`), 'compact dashboard header and notice fit at ' + width);
+    check(await evaluate(`!!window.authHost.querySelector('a[href="/add-transaction?type=income"]') && !!window.authHost.querySelector('a[href="/add-transaction?type=expense"]') && window.authHost.querySelector('.financeos-workspace-note').textContent.includes('shared between accounts')`), 'transaction actions and local-data disclosure preserved at ' + width);
+    await screenshot('dashboard-hierarchy-' + width);
+    await evaluate(`window.authHost.querySelector('button[aria-label="Planning period"]').click()`); await pause(100);
+    await evaluate(`[...document.querySelectorAll('[role="option"]')].find(el => el.textContent.trim() === 'Feb').click()`); await pause(150);
+    check(await evaluate(`window.authHost.querySelector('#dashboard-overview-title').textContent.startsWith('February ') && window.authHost.querySelector('button[aria-label="Planning period"]').textContent.includes('February')`), 'single selector updates dashboard month at ' + width);
+    await evaluate(`window.authHost.querySelector('button[aria-label="Planning period"]').click()`); await pause(100);
+    await evaluate(`var select = document.querySelector('select[aria-label="Budget year"]'); window.chosenBudgetYear = select.options[select.options.length - 1].value; Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, window.chosenBudgetYear); select.dispatchEvent(new Event('change', { bubbles: true }));`); await pause(150);
+    check(await evaluate(`window.authHost.querySelector('#dashboard-overview-title').textContent.includes(window.chosenBudgetYear) && window.authHost.querySelector('.financeos-topnav-budget').textContent.includes(window.chosenBudgetYear)`), 'single selector updates shared budget year at ' + width);
+    await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  }
   console.log('Screenshots: ' + dir);
 } finally {
   await send('Browser.close').catch(() => {});

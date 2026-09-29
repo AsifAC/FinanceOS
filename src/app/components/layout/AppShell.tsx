@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { Info } from "lucide-react";
 import { Toaster } from "../ui/sonner";
 import { PageTransition } from "./PageTransition";
 import { TopNav } from "./TopNav";
@@ -42,9 +43,10 @@ function AppShellContent() {
     <div className="financeos-premium min-h-screen text-slate-100" data-theme={theme}>
       <TopNav />
       <main className="relative mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
-        <p className="mb-5 rounded-xl border border-[var(--financeos-border)] p-4 text-sm text-[var(--financeos-text-secondary)]">
-          <strong>Local browser workspace.</strong> Financial records on these pages are saved on this browser, shared between accounts using it, and are not synced to your Supabase account. Signing out preserves these local records.
-        </p>
+        <aside className="financeos-workspace-note" aria-label="Local workspace information">
+          <Info size={15} aria-hidden="true" />
+          <p><strong>Local browser workspace.</strong> Records stay on this browser, are shared between accounts using it, and are not synced to your account. Signing out keeps them here.</p>
+        </aside>
         <PageTransition>
           <Outlet />
         </PageTransition>

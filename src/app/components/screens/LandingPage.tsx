@@ -1,3 +1,4 @@
+import { FinanceOSLogo } from "../common/FinanceOSLogo";
 import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router";
 import {
@@ -5,7 +6,6 @@ import {
   ArrowRight,
   CreditCard,
   Database,
-  DollarSign,
   FileText,
   Sparkles,
 } from "lucide-react";
@@ -86,7 +86,7 @@ function FinanceOS3DCard() {
       </div>
       <div className="financeos-dashboard-device">
         <div className="financeos-device-topbar">
-          <span>FinanceOS</span>
+          <FinanceOSLogo decorative />
           <span>June Budget</span>
         </div>
         <div className="financeos-device-grid">
@@ -161,7 +161,7 @@ function PaymentCardVisual() {
   return (
     <div className="financeos-payment-card-visual" aria-hidden="true">
       <div className="financeos-payment-card-main">
-        <span>FinanceOS Card</span>
+        <FinanceOSLogo variant="icon" decorative />
         <strong>Budget Method</strong>
         <i>**** 4820</i>
       </div>
@@ -354,11 +354,8 @@ export function LandingPage() {
   return (
     <div className="financeos-landing">
       <header className="financeos-landing-header">
-        <Link to="/" className="financeos-landing-brand" aria-label="FinanceOS landing page">
-          <span className="financeos-landing-logo">
-            <DollarSign className="h-5 w-5" />
-          </span>
-          <span>FinanceOS</span>
+        <Link to="/" className="financeos-landing-brand" aria-label="FinanceOS home">
+          <FinanceOSLogo decorative />
         </Link>
         <nav className="financeos-landing-actions" aria-label="Public navigation">
           {isLoading ? <span role="status">Loading session…</span> : isAuthenticated ? (

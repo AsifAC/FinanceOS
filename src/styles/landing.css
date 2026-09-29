@@ -67,7 +67,6 @@
   @media (max-width: 680px) {
     .financeos-landing .financeos-landing-header { align-items: center; gap: 8px; }
     .financeos-landing-header .financeos-landing-brand { gap: 8px; font-size: 14px; }
-    .financeos-landing-header .financeos-landing-logo { width: 32px; height: 32px; border-radius: 10px; box-shadow: none; }
     .financeos-landing .financeos-landing-header .landing-btn { min-height: 44px; padding: 10px 13px; font-size: 12px; }
     .financeos-landing-header .financeos-landing-actions { flex-wrap: nowrap; }
   }
@@ -94,17 +93,6 @@
     transform: scale(1.01);
   }
 
-  .financeos-landing-logo {
-    display: grid;
-    width: 2.5rem;
-    height: 2.5rem;
-    place-items: center;
-    border: 1px solid rgb(198 255 0 / 0.38);
-    border-radius: 0.95rem;
-    background: #C6FF00;
-    color: #0b0b0c;
-    box-shadow: 0 18px 42px rgb(198 255 0 / 0.2);
-  }
 
   .financeos-landing-actions,
   .financeos-landing-cta-row {

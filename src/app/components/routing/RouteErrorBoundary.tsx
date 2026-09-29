@@ -1,3 +1,4 @@
+import { FinanceOSLogo } from "../common/FinanceOSLogo";
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
 import { AlertTriangle, Bug, Home, Settings } from "lucide-react";
 import { Button } from "../ui/button";
@@ -26,7 +27,7 @@ export function RouteErrorBoundary() {
             <AlertTriangle className="h-7 w-7 text-rose-200" />
           </div>
 
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">FinanceOS</p>
+          <FinanceOSLogo />
           <h1 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">Something went wrong.</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
             The app hit a route error. You can return to your dashboard or restart setup while the issue is being fixed.

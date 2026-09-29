@@ -1,0 +1,26 @@
+.financeos-brand-image {
+  display: inline-block;
+  flex: none;
+  width: 192px;
+  height: 36px;
+  vertical-align: middle;
+}
+
+.financeos-brand-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Frame the supplied logo's black margins; preserve the artwork's proportions. */
+  object-fit: cover;
+  object-position: center;
+}
+
+.financeos-brand-image-icon { width: 32px; height: 32px; }
+
+@media (max-width: 1279px) {
+  .financeos-brand-image-compact { width: 32px; height: 32px; }
+}
+
+@media (max-width: 639px) {
+  .financeos-brand-image-full { width: 32px; height: 32px; }
+}

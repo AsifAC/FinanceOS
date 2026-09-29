@@ -1,7 +1,8 @@
+import "../../../styles/dashboard-header.css";
+import { FinanceOSLogo } from "../common/FinanceOSLogo";
 import { Link, useLocation, useNavigate } from "react-router";
-import { ArrowLeft, Bell, DollarSign, LogOut, Repeat2, Settings } from "lucide-react";
+import { ArrowLeft, Bell, LogOut, Repeat2, Settings } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -72,34 +73,20 @@ export function TopNav() {
   ])).sort();
 
   return (
-    <header className="sticky top-0 z-40 px-3 py-3 sm:px-6">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid items-center gap-3 rounded-[28px] border border-[var(--financeos-border)] bg-[var(--financeos-surface)]/90 px-3 py-3 shadow-[var(--financeos-shadow-card-hover)] backdrop-blur-2xl lg:grid-cols-[minmax(13rem,1fr)_auto_minmax(13rem,1fr)] lg:px-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link
-              to="/"
-              className="flex min-w-0 origin-left cursor-pointer items-center gap-3 rounded-[20px] transition duration-200 hover:scale-[1.01] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6]/50"
-              aria-label="FinanceOS landing page"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-[var(--financeos-border)] bg-[#2563EB] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-                <DollarSign className="h-5 w-5 text-white" />
-              </span>
-              <span className="min-w-0">
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="truncate text-base font-bold text-[var(--financeos-text-primary)]">FinanceOS</span>
-                  <span className="hidden h-1 w-1 rounded-full bg-[#3B82F6] sm:inline-block" />
-                  <span className="hidden truncate text-sm font-medium text-[var(--financeos-text-muted)] sm:block">{pageTitle}</span>
-                </span>
-                <span className="mt-1 flex items-center gap-2">
-                  <Badge variant="secondary" className="border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[11px] text-[var(--financeos-text-secondary)]">
-                    {activeYear} Budget
-                  </Badge>
-                </span>
-              </span>
+    <header className="financeos-topnav">
+      <div className="financeos-topnav-inner">
+        <div className="financeos-topnav-layout">
+          <div className="financeos-topnav-identity">
+            <Link to="/" className="financeos-topnav-brand" aria-label="FinanceOS home">
+              <FinanceOSLogo variant="compact" decorative />
             </Link>
+            <div className="financeos-topnav-context">
+              <span className="financeos-topnav-title">{pageTitle}</span>
+              <span className="financeos-topnav-budget">{activeYear} Budget</span>
+            </div>
           </div>
 
-          <div className="order-3 grid min-w-0 items-center gap-2 sm:grid-cols-[minmax(11rem,13rem)_minmax(18rem,auto)] lg:order-none">
+          <div className="financeos-topnav-period">
             <MonthSelector
               selectedMonth={selectedMonth}
               onMonthChange={setSelectedMonth}
@@ -111,15 +98,15 @@ export function TopNav() {
               label="Planning period"
               className="min-w-0"
             />
-            <DateTimeDisplay timezone={timezone} compact className="min-w-0" />
           </div>
 
-          <div className="flex min-w-0 items-center justify-end gap-2">
+          <div className="financeos-topnav-actions">
+            <DateTimeDisplay timezone={timezone} compact className="financeos-topnav-clock" />
             <Button
               asChild
               variant="outline"
               size="icon"
-              className="relative h-11 w-11 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
+              className="financeos-topnav-icon relative"
             >
               <Link
                 to="/notifications"
@@ -137,7 +124,7 @@ export function TopNav() {
             <Link
               to="/settings"
               aria-label="Settings"
-              className="hidden h-11 w-11 items-center justify-center rounded-full border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] text-[var(--financeos-text-secondary)] shadow-[var(--financeos-shadow-card)] transition-colors hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)] md:flex"
+              className="financeos-topnav-icon financeos-topnav-settings"
             >
               <Settings className="h-4 w-4" />
             </Link>
@@ -146,13 +133,13 @@ export function TopNav() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-11 gap-2 rounded-full border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-1.5 pr-3 text-[var(--financeos-text-secondary)] hover:bg-[var(--financeos-surface-hover)] hover:text-[var(--financeos-text-primary)]"
+                  className="financeos-topnav-profile"
                   aria-label="Profile menu"
                 >
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-xs font-bold text-white">
                     {initials}
                   </span>
-                  <span className="hidden max-w-[8rem] truncate text-sm font-semibold md:inline">{profileName}</span>
+                  <span className="financeos-topnav-profile-name">{profileName}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={10} className="w-[min(21rem,calc(100vw-1.5rem))] rounded-[20px] p-2">

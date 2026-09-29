@@ -31,7 +31,6 @@
   background: var(--auth-panel);
 }
 .auth-brand { display: inline-flex; align-items: center; align-self: flex-start; gap: 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.6px; z-index: 1; }
-.auth-brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--auth-lime); color: #050505; }
 .auth-cash-field { position: absolute; inset: 100px 2% 30%; overflow: hidden; pointer-events: none; }
 .auth-cash-bar {
   position: absolute;
@@ -62,8 +61,6 @@
 .auth-back { display: inline-flex; gap: 9px; align-items: center; align-self: flex-end; font-size: 12px; color: var(--auth-muted) !important; }
 .auth-back:hover { color: var(--auth-text) !important; }
 .auth-form-content { width: 100%; max-width: 470px; margin: auto 0; padding: 58px 0; min-width: 0; }
-.auth-wordmark { font-size: 13px; font-weight: 700; letter-spacing: -0.2px; }
-.auth-wordmark span { margin-left: 5px; color: var(--auth-lime); }
 .auth-form-heading h1, .auth-confirmation h1 { font-size: clamp(28px, 2.5vw, 38px); line-height: 1.17; font-weight: 500; letter-spacing: -1.2px; margin: 24px 0 14px; }
 .auth-form-heading > p:last-child, .auth-confirmation > p:not(.auth-eyebrow) { color: var(--auth-muted); font-size: 14px; line-height: 1.7; }
 .auth-form-heading { margin-bottom: 34px; }
