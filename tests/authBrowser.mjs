@@ -287,8 +287,8 @@ try {
         return {
           count: images.length,
           loaded: images.every(img => img.complete && img.naturalWidth > 0),
-          sized: images.every(img => { const box = bounds(img); return box.width > 0 && img.offsetHeight >= 28 && img.offsetHeight <= 36 && box.left >= -1 && box.right <= innerWidth + 1 && getComputedStyle(img).objectFit === 'cover'; }),
-          correct: images.every(img => { const compact = img.parentElement.classList.contains('financeos-brand-image-compact'); const icon = img.parentElement.classList.contains('financeos-brand-image-icon') || innerWidth <= (compact ? 1279 : 639); return img.currentSrc.endsWith(icon ? '/branding/fOS_favicon.png' : '/branding/fOS_logo.png'); }),
+          sized: images.every(img => { const box = bounds(img); return box.width > 0 && img.offsetHeight >= 28 && img.offsetHeight <= (img.closest('.financeos-auth') ? 48 : 34) && box.left >= -1 && box.right <= innerWidth + 1 && getComputedStyle(img).objectFit === 'contain' && Math.abs(img.offsetWidth / img.offsetHeight - img.naturalWidth / img.naturalHeight) < 0.04; }),
+          correct: images.every(img => { const compact = img.parentElement.classList.contains('financeos-brand-image-compact'); const icon = img.parentElement.classList.contains('financeos-brand-image-icon') || innerWidth <= (compact ? 1279 : 639); return img.currentSrc.endsWith(icon ? '/branding/financeos-favicon.png' : '/branding/financeos-logo.png'); }),
           overlap: header && home ? [...header.querySelectorAll('a, button')].filter(el => el !== home && !home.contains(el)).some(el => { const a = bounds(home), b = bounds(el); return b.width > 0 && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; }) : false,
           overflow: pageWidth > Math.max(innerWidth, widthWithoutBranding) || (header && [...header.querySelectorAll('a, button')].some(el => { const box = bounds(el); return box.width > 0 && (box.left < 0 || box.right > document.documentElement.clientWidth + 1); })),
           dimensions: { viewport: innerWidth, document: pageWidth, withoutBranding: widthWithoutBranding, header: header && [header.clientWidth, header.scrollWidth] },
@@ -297,10 +297,10 @@ try {
       })()`);
       if (brand.overflow || !brand.sized) { await screenshot('branding-overflow'); console.log('Overflow screenshot: ' + dir); }
       check(brand.count > 0 && brand.loaded && brand.sized && brand.correct && !brand.overlap && !brand.overflow && !brand.oldMark, `official branding fits ${path} at ${width}px: ${JSON.stringify(brand)}`);
-      if ([320, 1440].includes(width)) await screenshot('branding-' + (path.split('/').pop() || 'landing') + '-' + width);
+      if ([375, 768, 1024, 1440].includes(width) && ['/', '/auth/login', '/dashboard'].includes(path)) await screenshot('branding-' + (path.split('/').pop() || 'landing') + '-' + width);
     }
   }
-  check(await evaluate(`document.querySelector('link[rel="icon"]')?.getAttribute('href') === '/branding/fOS_favicon.png' && document.title.includes('FinanceOS')`), 'official favicon and FinanceOS browser title');
+  check(await evaluate(`document.querySelector('link[rel="icon"]')?.getAttribute('href') === '/branding/financeos-favicon.png' && document.title.includes('FinanceOS')`), 'official favicon and FinanceOS browser title');
   for (const width of [375, 768, 1024, 1440]) {
     await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
     await evaluate(`window.verificationConfig.verificationPolicy.required = false; window.accessHarness('/dashboard', true, false, false); window.scrollTo(0, 0)`); await pause(250);
