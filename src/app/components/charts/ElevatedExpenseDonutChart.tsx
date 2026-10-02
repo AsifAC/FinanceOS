@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 export interface ExpenseDonutDatum {
   category: string;
   amount: number;
+  /** Backend UUID when data is account-backed; legacy callers may omit it. */
+  categoryId?: string | null;
 }
 
 interface PreparedDatum extends ExpenseDonutDatum {
@@ -25,6 +27,10 @@ const PALETTE = [
 const ACTIVE_SLICE_OFFSET = 9;
 const DONUT_OUTER_RADIUS = 104;
 const DONUT_INNER_RADIUS = 58;
+
+function datumKey(item: ExpenseDonutDatum) {
+  return item.categoryId === undefined ? item.category : item.categoryId ?? "__not_assigned__";
+}
 
 function polarToCartesian(cx: number, cy: number, r: number, angle: number) {
   const radians = ((angle - 90) * Math.PI) / 180;
@@ -70,7 +76,7 @@ function formatCurrency(value: number) {
 }
 
 export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] }) {
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [hoveredCategoryKey, setHoveredCategoryKey] = useState<string | null>(null);
 
   const prepared = useMemo<PreparedDatum[]>(() => {
     const filtered = data.filter((item) => item.amount > 0);
@@ -98,7 +104,7 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
   }, [data]);
 
   const total = prepared.reduce((sum, item) => sum + item.amount, 0);
-  const hovered = prepared.find((item) => item.category === hoveredCategory) ?? prepared[0];
+  const hovered = prepared.find((item) => datumKey(item) === hoveredCategoryKey) ?? prepared[0];
 
   if (!prepared.length) {
     return (
@@ -134,24 +140,25 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
               <circle cx="160" cy="160" r="111" fill="var(--financeos-surface-elevated)" stroke="var(--financeos-border)" strokeWidth="1" />
 
               {prepared.map((item) => {
-                const isHovered = item.category === hoveredCategory;
+                const key = datumKey(item);
+                const isHovered = key === hoveredCategoryKey;
                 const offset = getOffset(item.startAngle, item.endAngle, isHovered ? ACTIVE_SLICE_OFFSET : 0);
                 const labelOffset = getOffset(item.startAngle, item.endAngle, 124);
                 const path = createDonutSlicePath(160, 160, DONUT_OUTER_RADIUS, DONUT_INNER_RADIUS, item.startAngle, item.endAngle);
 
                 return (
                   <g
-                    key={item.category}
+                    key={key}
                     className="financeos-donut-slice cursor-pointer outline-none"
                     tabIndex={0}
                     style={{
                       transform: `translate(${offset.x}px, ${offset.y}px)`,
                       transformOrigin: "160px 160px",
                     }}
-                    onMouseEnter={() => setHoveredCategory(item.category)}
-                    onMouseLeave={() => setHoveredCategory(null)}
-                    onFocus={() => setHoveredCategory(item.category)}
-                    onBlur={() => setHoveredCategory(null)}
+                    onMouseEnter={() => setHoveredCategoryKey(key)}
+                    onMouseLeave={() => setHoveredCategoryKey(null)}
+                    onFocus={() => setHoveredCategoryKey(key)}
+                    onBlur={() => setHoveredCategoryKey(null)}
                     aria-label={`${item.category}: ${formatCurrency(item.amount)}, ${item.percentage.toFixed(1)} percent`}
                   >
                     <path
@@ -219,13 +226,13 @@ export function ElevatedExpenseDonutChart({ data }: { data: ExpenseDonutDatum[] 
           <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {prepared.map((item) => (
               <button
-                key={item.category}
+                key={datumKey(item)}
                 type="button"
                 className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] px-3 py-2 text-left transition-all hover:-translate-y-0.5 hover:bg-[var(--financeos-surface-hover)] focus:outline-none focus:ring-2 focus:ring-slate-300/40"
-                onMouseEnter={() => setHoveredCategory(item.category)}
-                onMouseLeave={() => setHoveredCategory(null)}
-                onFocus={() => setHoveredCategory(item.category)}
-                onBlur={() => setHoveredCategory(null)}
+                onMouseEnter={() => setHoveredCategoryKey(datumKey(item))}
+                onMouseLeave={() => setHoveredCategoryKey(null)}
+                onFocus={() => setHoveredCategoryKey(datumKey(item))}
+                onBlur={() => setHoveredCategoryKey(null)}
               >
                 <span
                   className="h-3 w-3 shrink-0 rounded-full shadow-lg"

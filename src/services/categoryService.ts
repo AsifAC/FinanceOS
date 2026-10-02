@@ -61,12 +61,15 @@ function mapError(error: { code?: string; message?: string }): CategoryServiceEr
   };
 }
 
-async function getCurrentUserId(): Promise<CategoryServiceResult<string>> {
+async function getCurrentUserId(expectedOwnerId?: string): Promise<CategoryServiceResult<string>> {
   if (!supabase) return failure(notConfiguredError);
 
   const { data, error } = await supabase.auth.getUser();
   if (error) return failure(mapError(error));
   if (!data.user) return failure(notAuthenticatedError);
+  if (expectedOwnerId && data.user.id !== expectedOwnerId) {
+    return failure({ code: "account_changed", message: "The active account changed before the category request." });
+  }
 
   return success(data.user.id);
 }
@@ -112,10 +115,11 @@ export async function fetchCategoriesByType(
 
 export async function createCategory(
   input: CreateCategoryInput,
+  expectedOwnerId?: string,
 ): Promise<CategoryServiceResult<Category>> {
   if (!supabase) return failure(notConfiguredError);
 
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId(expectedOwnerId);
   if (!userId.ok) return failure(userId.error);
 
   const { data, error } = await supabase
@@ -136,10 +140,11 @@ export async function createCategory(
 export async function updateCategory(
   id: string,
   updates: UpdateCategoryInput,
+  expectedOwnerId?: string,
 ): Promise<CategoryServiceResult<Category>> {
   if (!supabase) return failure(notConfiguredError);
 
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId(expectedOwnerId);
   if (!userId.ok) return failure(userId.error);
 
   const nextUpdates = {
@@ -162,16 +167,18 @@ export async function updateCategory(
 
 export function archiveCategory(
   id: string,
+  expectedOwnerId?: string,
 ): Promise<CategoryServiceResult<Category>> {
-  return updateCategory(id, { is_archived: true });
+  return updateCategory(id, { is_archived: true }, expectedOwnerId);
 }
 
 export async function deleteCategory(
   id: string,
+  expectedOwnerId?: string,
 ): Promise<CategoryServiceResult<void>> {
   if (!supabase) return failure(notConfiguredError);
 
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId(expectedOwnerId);
   if (!userId.ok) return failure(userId.error);
 
   const { error } = await supabase

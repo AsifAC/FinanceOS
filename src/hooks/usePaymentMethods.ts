@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "./useAuth";
 import {
   archivePaymentMethod,
@@ -14,158 +14,107 @@ import {
 } from "../services/paymentMethodService";
 import type { PaymentMethod } from "../types/supabase";
 
+type PaymentMethodState = {
+  owner: string | null;
+  paymentMethods: PaymentMethod[];
+  error: PaymentMethodServiceError | null;
+  pending: number;
+};
+
+const unauthenticatedError: PaymentMethodServiceError = {
+  code: "not_authenticated",
+  message: "Sign in before loading or updating payment methods.",
+};
+
 export function usePaymentMethods() {
   const { isAuthenticated, isLoading: authIsLoading, user } = useAuth();
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<PaymentMethodServiceError | null>(null);
+  const owner = !authIsLoading && isAuthenticated ? user?.id ?? null : null;
+  const [state, setState] = useState<PaymentMethodState>({ owner: null, paymentMethods: [], error: null, pending: 0 });
+  const scope = useRef<{ owner: string | null; generation: number }>({ owner: null, generation: 0 });
+  const latestRefresh = useRef(0);
 
-  const refreshPaymentMethods = useCallback(async () => {
-    if (authIsLoading) {
-      return { ok: true, data: [], error: null } satisfies PaymentMethodServiceResult<
-        PaymentMethod[]
-      >;
+  const runForOwner = useCallback(async <T,>(
+    operation: () => Promise<PaymentMethodServiceResult<T>>,
+    onSuccess?: (methods: PaymentMethod[], data: T) => PaymentMethod[],
+    isLatest?: () => boolean,
+  ): Promise<PaymentMethodServiceResult<T>> => {
+    if (!owner || scope.current.owner !== owner) {
+      return { ok: false, data: null, error: unauthenticatedError };
     }
-
-    if (!isAuthenticated) {
-      setPaymentMethods([]);
-      setError(null);
-      setIsLoading(false);
-      return { ok: true, data: [], error: null } satisfies PaymentMethodServiceResult<
-        PaymentMethod[]
-      >;
+    const generation = scope.current.generation;
+    setState((current) => current.owner === owner
+      ? { ...current, pending: current.pending + 1, error: null }
+      : current);
+    const result = await operation();
+    if (scope.current.owner === owner && scope.current.generation === generation) {
+      setState((current) => {
+        if (current.owner !== owner) return current;
+        const latest = !isLatest || isLatest();
+        return {
+          ...current,
+          paymentMethods: latest && result.ok && onSuccess ? onSuccess(current.paymentMethods, result.data) : current.paymentMethods,
+          pending: Math.max(0, current.pending - 1),
+          error: latest ? result.error : current.error,
+        };
+      });
     }
+    return scope.current.owner === owner && scope.current.generation === generation ? result : {
+      ok: false, data: null, error: { code: "account_changed", message: "The active account changed during the payment method request." },
+    };
+  }, [owner]);
 
-    setIsLoading(true);
-    setError(null);
-
-    const result = await fetchPaymentMethods();
-    setIsLoading(false);
-
-    if (!result.ok) {
-      setPaymentMethods([]);
-      setError(result.error);
-      return result;
+  const refreshPaymentMethods = useCallback(() => {
+    if (authIsLoading || !owner) {
+      return Promise.resolve({ ok: true, data: [], error: null } satisfies PaymentMethodServiceResult<PaymentMethod[]>);
     }
+    const request = ++latestRefresh.current;
+    return runForOwner(fetchPaymentMethods, (_current, methods) => methods, () => request === latestRefresh.current);
+  }, [authIsLoading, owner, runForOwner]);
 
-    setPaymentMethods(result.data);
-    return result;
-  }, [authIsLoading, isAuthenticated]);
+  const addPaymentMethod = useCallback((input: CreatePaymentMethodInput) =>
+    runForOwner(() => createPaymentMethod(input, owner ?? undefined), (current, method) => [...current, method]), [owner, runForOwner]);
 
-  const addPaymentMethod = useCallback(
-    async (input: CreatePaymentMethodInput) => {
-      setIsLoading(true);
-      setError(null);
+  const editPaymentMethod = useCallback((id: string, updates: UpdatePaymentMethodInput) =>
+    runForOwner(() => updatePaymentMethod(id, updates, owner ?? undefined), (current, method) =>
+      current.map((item) => item.id === method.id ? method : item)), [owner, runForOwner]);
 
-      const result = await createPaymentMethod(input);
-      setIsLoading(false);
+  const archiveExistingPaymentMethod = useCallback((id: string) =>
+    runForOwner(() => archivePaymentMethod(id, owner ?? undefined), (current, method) =>
+      current.map((item) => item.id === method.id ? method : item)), [owner, runForOwner]);
 
-      if (!result.ok) {
-        setError(result.error);
-        return result;
-      }
+  const setPaymentMethodArchived = useCallback((id: string, isArchived: boolean) =>
+    runForOwner(() => isArchived ? archivePaymentMethod(id, owner ?? undefined) : updatePaymentMethod(id, { is_archived: false }, owner ?? undefined), (current, method) =>
+      current.map((item) => item.id === method.id ? method : item)), [owner, runForOwner]);
 
-      setPaymentMethods((current) => [...current, result.data]);
-      return result;
-    },
-    [],
-  );
+  const removePaymentMethod = useCallback((id: string) =>
+    runForOwner(() => deletePaymentMethod(id, owner ?? undefined), (current) => current.filter((item) => item.id !== id),
+    ), [owner, runForOwner]);
 
-  const editPaymentMethod = useCallback(
-    async (id: string, updates: UpdatePaymentMethodInput) => {
-      setIsLoading(true);
-      setError(null);
-
-      const result = await updatePaymentMethod(id, updates);
-      setIsLoading(false);
-
-      if (!result.ok) {
-        setError(result.error);
-        return result;
-      }
-
-      setPaymentMethods((current) =>
-        current.map((paymentMethod) =>
-          paymentMethod.id === result.data.id ? result.data : paymentMethod,
-        ),
-      );
-      return result;
-    },
-    [],
-  );
-
-  const archiveExistingPaymentMethod = useCallback(async (id: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    const result = await archivePaymentMethod(id);
-    setIsLoading(false);
-
-    if (!result.ok) {
-      setError(result.error);
-      return result;
-    }
-
-    setPaymentMethods((current) =>
-      current.map((paymentMethod) =>
-        paymentMethod.id === result.data.id ? result.data : paymentMethod,
-      ),
-    );
-    return result;
-  }, []);
-
-  const removePaymentMethod = useCallback(async (id: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    const result = await deletePaymentMethod(id);
-    setIsLoading(false);
-
-    if (!result.ok) {
-      setError(result.error);
-      return result;
-    }
-
-    setPaymentMethods((current) =>
-      current.filter((paymentMethod) => paymentMethod.id !== id),
-    );
-    return result;
-  }, []);
-
-  const chooseDefaultPaymentMethod = useCallback(async (id: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    const result = await setDefaultPaymentMethod(id);
-    setIsLoading(false);
-
-    if (!result.ok) {
-      setError(result.error);
-      return result;
-    }
-
-    setPaymentMethods((current) =>
-      current.map((paymentMethod) =>
-        paymentMethod.id === result.data.id
-          ? result.data
-          : { ...paymentMethod, is_default: false },
-      ),
-    );
-    return result;
-  }, []);
+  const chooseDefaultPaymentMethod = useCallback((id: string) =>
+    runForOwner(() => setDefaultPaymentMethod(id, owner ?? undefined), (current, method) =>
+      current.map((item) => item.id === method.id ? method : { ...item, is_default: false })), [owner, runForOwner]);
 
   useEffect(() => {
-    void refreshPaymentMethods();
-  }, [refreshPaymentMethods, user?.id]);
+    scope.current = { owner, generation: scope.current.generation + 1 };
+    setState({ owner, paymentMethods: [], error: null, pending: 0 });
+    if (owner) void refreshPaymentMethods();
+    return () => {
+      scope.current = { owner: null, generation: scope.current.generation + 1 };
+      latestRefresh.current += 1;
+    };
+  }, [owner, refreshPaymentMethods]);
 
+  // Account-scoped rows disappear during render, before effect cleanup/reset.
+  const visible = owner !== null && state.owner === owner;
   return {
-    paymentMethods,
-    isLoading: authIsLoading || isLoading,
-    error,
+    paymentMethods: visible ? state.paymentMethods : [],
+    isLoading: authIsLoading || (owner !== null && (!visible || state.pending > 0)),
+    error: visible ? state.error : null,
     refreshPaymentMethods,
     createPaymentMethod: addPaymentMethod,
     updatePaymentMethod: editPaymentMethod,
     archivePaymentMethod: archiveExistingPaymentMethod,
+    setPaymentMethodArchived,
     deletePaymentMethod: removePaymentMethod,
     setDefaultPaymentMethod: chooseDefaultPaymentMethod,
   };

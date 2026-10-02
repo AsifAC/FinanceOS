@@ -4,6 +4,11 @@ import {
   Bell,
   CircleHelp,
   CreditCard,
+  WalletCards,
+  ListOrdered,
+  CalendarClock,
+  CalendarDays,
+  PlusCircle,
   Archive,
   LayoutDashboard,
   LineChart,
@@ -19,13 +24,18 @@ import { cn } from "../ui/utils";
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { label: "Actual Transactions", path: "/transactions", icon: ListOrdered },
+  { label: "Expected Transactions", path: "/expected-transactions", icon: CalendarClock },
+  { label: "Add Actual Transaction", path: "/add-transaction", icon: PlusCircle },
   { label: "Income", path: "/income", icon: TrendingUp },
   { label: "Expenses", path: "/expenses", icon: CreditCard },
   { label: "Categories", path: "/categories", icon: Tag },
+  { label: "Payment Methods", path: "/payment-methods", icon: WalletCards },
   { label: "Savings", path: "/tracker", icon: PiggyBank },
   { label: "Debt", path: "/payment-plans", icon: TrendingDown },
   { label: "Reports", path: "/reports", icon: LineChart },
-  { label: "Archived Budgets", path: "/saved-budgets", icon: Archive },
+  { label: "Annual Planner", path: "/annual-planner", icon: CalendarDays },
+  { label: "Saved Budgets", path: "/saved-budgets", icon: Archive },
   { label: "Notifications", path: "/notifications", icon: Bell },
   { label: "Help Center", path: "/help", icon: CircleHelp },
   { label: "Settings", path: "/settings", icon: Settings },
@@ -70,7 +80,7 @@ export function MenuDropdown() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[22px] border border-[var(--financeos-border)] bg-[var(--financeos-surface)] shadow-[var(--financeos-shadow-card-hover)] backdrop-blur-xl"
+          className="absolute right-0 z-50 mt-3 max-h-[calc(100dvh-7rem)] w-[min(22rem,calc(100vw-2rem))] overflow-x-hidden overflow-y-auto rounded-[22px] border border-[var(--financeos-border)] bg-[var(--financeos-surface)] shadow-[var(--financeos-shadow-card-hover)] backdrop-blur-xl"
         >
           <div className="grid gap-1 p-2">
             {navItems.map(({ label, path, icon: Icon }, index) => (

@@ -14,6 +14,10 @@ import { getMonthlyAmount } from "../../data/data";
 import { calculateBudgetHealthScore } from "../../lib/budgetHealthScore";
 import { useFinanceData } from "../../lib/financeStore";
 import { MONTHS, MONTH_SHORT } from "../../lib/constants";
+import { useTransactions } from "../../../hooks/useTransactions";
+import { useCategories } from "../../../hooks/useCategories";
+import { getActualTransactionMonths } from "../../lib/actualTransactionTotals";
+import { getActualCategoryBreakdown } from "../../lib/actualTransactionCategories";
 import {
   chartGridStroke,
   chartLegendStyle,
@@ -21,7 +25,6 @@ import {
   chartTooltipLabelStyle,
   chartTooltipStyle,
 } from "../charts/chartTheme";
-import type { Transaction } from "../../data/data";
 
 interface TrackerCardProps {
   label: string;
@@ -64,16 +67,7 @@ function statusFor(actual: number, expected: number, isInverse = false) {
     : { label: isInverse ? "Over target" : "Behind", tone: "text-[var(--financeos-warning-icon)]", bg: "bg-[var(--financeos-warning-bg)]" };
 }
 
-function dateYear(date: string | undefined) {
-  return date?.match(/^(\d{4})-\d{2}-\d{2}/)?.[1] ?? null;
-}
-
-function dateMonth(date: string | undefined) {
-  const month = date?.match(/^\d{4}-(\d{2})-\d{2}/)?.[1];
-  return month ? Number(month) - 1 : null;
-}
-
-function TrackerCard({ label, expected, actual, color, isInverse }: TrackerCardProps) {
+function TrackerCard({ label, expected, actual, color, isInverse, actualStatus = "ready" }: TrackerCardProps & { actualStatus?: "loading" | "error" | "ready" }) {
   const pct = percent(actual, expected);
   const visualPct = clamp(pct);
   const diff = actual - expected;
@@ -93,26 +87,25 @@ function TrackerCard({ label, expected, actual, color, isInverse }: TrackerCardP
         <div className="flex items-center justify-between mb-3">
           <p className={`text-sm ${color}`} style={{ fontWeight: 600 }}>{label}</p>
           <div className={`flex items-center gap-1 text-xs ${positive ? "text-[var(--financeos-success-icon)]" : "text-[var(--financeos-warning-icon)]"}`}>
-            {diff === 0 ? <Minus className="w-3 h-3" /> : positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {diff > 0 ? "+" : ""}{money(diff)}
+            {actualStatus !== "ready" ? actualStatus === "loading" ? "Loading actuals…" : "Unavailable" : <>
+              {diff === 0 ? <Minus className="w-3 h-3" /> : positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {diff > 0 ? "+" : ""}{money(diff)}
+            </>}
           </div>
         </div>
         <div className="space-y-2">
           <div className="flex justify-between gap-3 text-xs text-[var(--financeos-text-muted)]">
-            <span>Actual: <span className={color} style={{ fontWeight: 600 }}>{money(actual)}</span></span>
-            <span>Expected: {money(expected)}</span>
+            <span>Actual: <span className={color} style={{ fontWeight: 600 }}>{actualStatus === "loading" ? "Loading…" : actualStatus === "error" ? "Unavailable" : money(actual)}</span></span>
+            <span>Expected (local): {money(expected)}</span>
           </div>
-          <div className="relative h-3 overflow-hidden rounded-full bg-white/10 shadow-inner shadow-black/40" aria-label={`${label} progress`}>
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${visualPct}%`, backgroundColor: progressColor }}
-            />
-          </div>
+          {actualStatus === "ready" && <div className="relative h-3 overflow-hidden rounded-full bg-white/10 shadow-inner shadow-black/40" aria-label={`${label} progress`}>
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${visualPct}%`, backgroundColor: progressColor }} />
+          </div>}
           <div className="flex justify-between items-center">
             <span className={`text-xs ${status.tone}`} style={{ fontWeight: 600 }}>
-              {pct}%
+              {actualStatus === "ready" ? `${pct}%` : actualStatus === "loading" ? "Loading…" : "Unavailable"}
             </span>
-            <span className={`rounded-full px-2 py-0.5 text-[11px] ${status.bg} ${status.tone}`} style={{ fontWeight: 600 }}>{status.label}</span>
+            {actualStatus === "ready" && <span className={`rounded-full px-2 py-0.5 text-[11px] ${status.bg} ${status.tone}`} style={{ fontWeight: 600 }}>{status.label}</span>}
           </div>
         </div>
       </CardContent>
@@ -120,38 +113,25 @@ function TrackerCard({ label, expected, actual, color, isInverse }: TrackerCardP
   );
 }
 
-function RateCard({ label, value, color, desc }: { label: string; value: number; color: string; desc: string }) {
+function RateCard({ label, value, color, desc, actualStatus = "ready" }: { label: string; value: number; color: string; desc: string; actualStatus?: "loading" | "error" | "ready" }) {
   const safeValue = clamp(Math.round(value), 0, 999);
   return (
     <Card className="overflow-hidden shadow-sm">
       <CardContent className="p-4 text-center">
         <p className="text-xs text-[var(--financeos-text-muted)] mb-1">{label}</p>
-        <p className={`text-3xl ${color}`} style={{ fontWeight: 700 }}>{safeValue}%</p>
-        <p className="text-xs text-[var(--financeos-text-muted)] mt-1">{desc}</p>
+        <p className={`text-3xl ${color}`} style={{ fontWeight: 700 }}>{actualStatus === "ready" ? `${safeValue}%` : actualStatus === "loading" ? "Loading…" : "Unavailable"}</p>
+        <p className="text-xs text-[var(--financeos-text-muted)] mt-1">{actualStatus === "ready" ? desc : "Account actuals unavailable"}</p>
       </CardContent>
     </Card>
   );
 }
 
-function savingsTransactionsByCategory(transactions: Transaction[], activeYear: string, selectedMonth: number) {
-  return Object.values(transactions
-    .filter((transaction) => transaction.type === "savings")
-    .filter((transaction) => dateYear(transaction.date) === activeYear)
-    .filter((transaction) => {
-      const month = dateMonth(transaction.date);
-      return month !== null && month <= selectedMonth;
-    })
-    .reduce<Record<string, { category: string; amount: number }>>((groups, transaction) => {
-      const category = transaction.category || "Uncategorized";
-      groups[category] ??= { category, amount: 0 };
-      groups[category].amount += Number.isFinite(transaction.amount) ? transaction.amount : 0;
-      return groups;
-    }, {}))
-    .sort((a, b) => b.amount - a.amount);
-}
-
 export function TrackerUI() {
-  const { activeYear, selectedMonth, actualAmounts, expectedAmounts, transactions, categories } = useFinanceData();
+  const { activeYear, selectedMonth, expectedAmounts } = useFinanceData();
+  const actual = useTransactions();
+  const categoryState = useCategories();
+  const actualStatus = actual.isLoading ? "loading" : actual.error ? "error" : "ready";
+  const actualAmounts = getActualTransactionMonths(actual.transactions, Number(activeYear));
   const current = getMonthlyAmount(actualAmounts, selectedMonth);
   const expected = getMonthlyAmount(expectedAmounts, selectedMonth);
   const incomeTotal = actualAmounts.slice(0, selectedMonth + 1).reduce((s, m) => s + m.income, 0);
@@ -176,10 +156,11 @@ export function TrackerUI() {
     Actual: getMonthlyAmount(actualAmounts, index).savings,
     Expected: getMonthlyAmount(expectedAmounts, index).savings,
   }));
-  const savingsCategories = categories.filter((category) => category.type === "savings");
-  const savingsByCategory = savingsTransactionsByCategory(transactions, activeYear, selectedMonth);
+  const savingsCategories = categoryState.categories.filter((category) => category.type === "savings");
+  const savingsByCategory = getActualCategoryBreakdown(actual.transactions, categoryState.categories, "savings", Number(activeYear), undefined, selectedMonth)
+    .map((item) => ({ categoryId: item.categoryId, category: item.category, amount: item.amount }));
   const goalTarget = savingsCategories.length ? expectedSavingsTotal / savingsCategories.length : 0;
-  const savingsGoals = (savingsByCategory.length ? savingsByCategory : savingsCategories.map((category) => ({ category: category.name, amount: 0 })))
+  const savingsGoals = (savingsByCategory.length ? savingsByCategory : savingsCategories.map((category) => ({ categoryId: category.id, category: category.name, amount: 0 })))
     .slice(0, 4)
     .map((goal) => ({
       ...goal,
@@ -202,10 +183,14 @@ export function TrackerUI() {
   const budgetHealth = budgetHealthBreakdown.score;
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-5" data-savings-actual-status={actualStatus}>
+      {actual.error && <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-700" role="alert">
+        <span>Could not load account savings activity. Actual values are unavailable.</span>
+        <button type="button" className="rounded-lg border border-rose-300/50 px-3 py-1.5" onClick={() => void actual.refresh()}>Retry</button>
+      </div>}
       <div>
         <h1 className="text-[var(--financeos-text-primary)]">Savings</h1>
-        <p className="text-[var(--financeos-text-muted)] text-sm">Visual progress tracker — YTD through {MONTHS[selectedMonth]} {activeYear}</p>
+        <p className="text-[var(--financeos-text-muted)] text-sm">Account actuals compared with local expected plans — YTD through {MONTHS[selectedMonth]} {activeYear}</p>
       </div>
 
       {/* YTD Progress Cards */}
@@ -215,18 +200,21 @@ export function TrackerUI() {
           expected={expIncExpected}
           actual={incomeTotal}
           color="text-green-600"
+          actualStatus={actualStatus}
         />
         <TrackerCard
           label="Savings Progress"
           expected={expSavExpected}
           actual={savingsTotal}
           color="text-blue-600"
+          actualStatus={actualStatus}
         />
         <TrackerCard
           label="Debt Payment Progress"
           expected={expDebtExpected}
           actual={debtTotal}
           color="text-red-600"
+          actualStatus={actualStatus}
         />
         <TrackerCard
           label="Expense Limit Progress"
@@ -234,6 +222,7 @@ export function TrackerUI() {
           actual={expensesTotal}
           color="text-orange-600"
           isInverse
+          actualStatus={actualStatus}
         />
       </div>
 
@@ -241,10 +230,10 @@ export function TrackerUI() {
       <div>
         <h3 className="text-[var(--financeos-text-primary)] mb-3">{MONTHS[selectedMonth]} {activeYear} - Selected Month</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <TrackerCard label="Income" expected={expected.income} actual={current.income} color="text-green-600" />
-          <TrackerCard label="Savings" expected={expected.savings} actual={current.savings} color="text-blue-600" />
-          <TrackerCard label="Debt" expected={expected.debt} actual={current.debt} color="text-red-600" />
-          <TrackerCard label="Expenses" expected={expected.expenses} actual={current.expenses} color="text-orange-600" isInverse />
+          <TrackerCard label="Income" expected={expected.income} actual={current.income} color="text-green-600" actualStatus={actualStatus} />
+          <TrackerCard label="Savings" expected={expected.savings} actual={current.savings} color="text-blue-600" actualStatus={actualStatus} />
+          <TrackerCard label="Debt" expected={expected.debt} actual={current.debt} color="text-red-600" actualStatus={actualStatus} />
+          <TrackerCard label="Expenses" expected={expected.expenses} actual={current.expenses} color="text-orange-600" isInverse actualStatus={actualStatus} />
         </div>
       </div>
 
@@ -252,9 +241,9 @@ export function TrackerUI() {
       <div>
         <h3 className="text-[var(--financeos-text-primary)] mb-3">Financial Health Metrics</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <RateCard label="Savings Rate" value={savingsRate} color="text-blue-600" desc={`${money(savingsTotal)} saved`} />
-          <RateCard label="Expense Rate" value={expenseRate} color={expenseRate < 60 ? "text-green-600" : "text-orange-600"} desc={`${money(expensesTotal)} spent`} />
-          <RateCard label="Debt Rate" value={debtRate} color={debtRate < 20 ? "text-green-600" : "text-red-600"} desc={`${money(debtTotal)} paid`} />
+          <RateCard label="Savings Rate" value={savingsRate} color="text-blue-600" desc={`${money(savingsTotal)} saved`} actualStatus={actualStatus} />
+          <RateCard label="Expense Rate" value={expenseRate} color={expenseRate < 60 ? "text-green-600" : "text-orange-600"} desc={`${money(expensesTotal)} spent`} actualStatus={actualStatus} />
+          <RateCard label="Debt Rate" value={debtRate} color={debtRate < 20 ? "text-green-600" : "text-red-600"} desc={`${money(debtTotal)} paid`} actualStatus={actualStatus} />
           <Card className="overflow-hidden shadow-sm">
             <CardContent className="p-4 text-center">
               <p className="text-xs text-[var(--financeos-text-muted)] mb-1">Budget Health Score</p>
@@ -266,7 +255,7 @@ export function TrackerUI() {
                     fill="none"
                     stroke={budgetHealth >= 75 ? "#2563EB" : budgetHealth >= 50 ? "#D97706" : "#DC2626"}
                     strokeWidth="3"
-                    strokeDasharray={`${budgetHealth} ${100 - budgetHealth}`}
+                    strokeDasharray={actualStatus === "ready" ? `${budgetHealth} ${100 - budgetHealth}` : "0 100"}
                     strokeLinecap="round"
                   />
                 </svg>
@@ -276,11 +265,11 @@ export function TrackerUI() {
                   }`}
                   style={{ fontWeight: 700 }}
                 >
-                  {budgetHealth}
+                  {actualStatus === "ready" ? budgetHealth : "—"}
                 </span>
               </div>
               <p className="text-xs text-[var(--financeos-text-muted)]">
-                {budgetHealth >= 75 ? "Excellent" : budgetHealth >= 50 ? "Good" : "Needs Work"}
+                {actualStatus !== "ready" ? "Account actuals unavailable" : budgetHealth >= 75 ? "Excellent" : budgetHealth >= 50 ? "Good" : "Needs Work"}
               </p>
             </CardContent>
           </Card>
@@ -296,7 +285,7 @@ export function TrackerUI() {
                 <h3 className="text-base text-[var(--financeos-text-primary)]" style={{ fontWeight: 700 }}>Actual vs Expected Savings</h3>
               </div>
             </div>
-            {hasSavingsData ? (
+            {actualStatus !== "ready" ? <div className="flex h-[260px] items-center justify-center rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] p-6 text-center text-sm text-[var(--financeos-text-muted)]">{actualStatus === "loading" ? "Loading account actuals…" : "Savings actual series unavailable."}</div> : hasSavingsData ? (
               <div className="h-[260px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={savingsTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -325,7 +314,7 @@ export function TrackerUI() {
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[var(--financeos-text-muted)]">Actual savings</span>
-                <span className="text-blue-600" style={{ fontWeight: 700 }}>{money(current.savings)}</span>
+                <span className="text-blue-600" style={{ fontWeight: 700 }}>{actualStatus === "ready" ? money(current.savings) : actualStatus === "loading" ? "Loading…" : "Unavailable"}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[var(--financeos-text-muted)]">Expected savings</span>
@@ -354,7 +343,7 @@ export function TrackerUI() {
             <p className="text-xs uppercase tracking-[0.18em] text-[var(--financeos-text-muted)]">Savings goals</p>
             <h3 className="text-base text-[var(--financeos-text-primary)]" style={{ fontWeight: 700 }}>Goal Progress Through {MONTHS[selectedMonth]}</h3>
           </div>
-          {savingsGoals.length ? (
+          {actualStatus !== "ready" ? <div className="rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] p-6 text-center text-sm text-[var(--financeos-text-muted)]">{actualStatus === "loading" ? "Loading account savings contributions…" : "Actual savings contributions are unavailable."}</div> : savingsGoals.length ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {savingsGoals.map((goal) => (
                 <div key={goal.category} className="rounded-2xl border border-[var(--financeos-border)] bg-[var(--financeos-surface-elevated)] p-4">

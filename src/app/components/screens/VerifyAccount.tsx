@@ -1,4 +1,3 @@
-import { FinanceOSLogo } from "../common/FinanceOSLogo";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Navigate } from "react-router";
 import { Mail, Smartphone } from "lucide-react";
@@ -85,7 +84,7 @@ function VerificationForm() {
   }
   if (!isLoading && profile?.account_verified_at) return <Navigate to="/dashboard" replace />;
   return <AuthLayout mode="verify">
-    <div className="auth-form-heading"><FinanceOSLogo decorative /><h1>Verify your account</h1>
+    <div className="auth-form-heading"><h1>Verify your account</h1>
       <p>{verificationDelivery.email || verificationDelivery.phone
         ? "Choose where you'd like to receive your verification code."
         : "Account verification is currently unavailable. Email and SMS delivery have not been enabled yet."}</p></div>

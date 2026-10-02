@@ -62,6 +62,34 @@ test("insert and update strip caller-owned identity and timestamps at runtime", 
   assert.ok(db.calls.some(([method, key, value]) => method === "eq" && key === "user_id" && value === "owner-a"));
 });
 
+test("create can be bound to the account captured by the UI and rejects a session switch before insert", async () => {
+  const db = mock({ user: { id: "owner-b" } });
+  const service = await load(db.client);
+  const result = await service.createTransaction({
+    type: "income", amount: 10, title: "Pay", transaction_date: "2026-09-30",
+  }, "owner-a");
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, "account_changed");
+  assert.equal(db.calls.some(([method]) => method === "insert"), false);
+});
+
+test("update and delete reject a changed account before mutating and remain owner scoped", async () => {
+  const db = mock({ user: { id: "owner-b" } });
+  const service = await load(db.client);
+  const update = await service.updateTransaction("row", { title: "Changed" }, "owner-a");
+  const remove = await service.deleteTransaction("row", "owner-a");
+  assert.equal(update.error.code, "account_changed");
+  assert.equal(remove.error.code, "account_changed");
+  assert.equal(db.calls.some(([method]) => ["update", "delete"].includes(method)), false);
+
+  const owned = mock({ responses: [{ data: { id: "row", title: "Changed" }, error: null }, { data: { id: "row" }, error: null }] });
+  const ownedService = await load(owned.client);
+  assert.equal((await ownedService.updateTransaction("row", { title: "Changed" }, "owner-a")).ok, true);
+  assert.equal((await ownedService.deleteTransaction("row", "owner-a")).ok, true);
+  assert.ok(owned.calls.some(([op, key, value]) => op === "eq" && key === "id" && value === "row"));
+  assert.ok(owned.calls.some(([op, key, value]) => op === "eq" && key === "user_id" && value === "owner-a"));
+});
+
 test("month queries use exclusive next-month boundary including December and leap year", async () => {
   for (const [year, month, start, end] of [[2026, 12, "2026-12-01", "2027-01-01"], [2028, 2, "2028-02-01", "2028-03-01"]]) {
     const db = mock();
@@ -100,4 +128,12 @@ test("history reads paginate and sanitize database failures", async () => {
   const result = await (await load(failing.client)).fetchTransactions();
   assert.equal(result.error.code, "invalid_input");
   assert.equal(JSON.stringify(result).includes("secret-token"), false);
+});
+
+test("linked actual deletion explains the completed expected-event restriction", async () => {
+  const db = mock({ responses: [{ data: null, error: { code: "23503", message: "private constraint" } }] });
+  const result = await (await load(db.client)).deleteTransaction("actual-id", "owner-a");
+  assert.equal(result.error.code, "linked_expected_event");
+  assert.match(result.error.message, /linked to a completed expected event/);
+  assert.equal(result.error.message.includes("private constraint"), false);
 });

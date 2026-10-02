@@ -215,7 +215,7 @@ try {
   await evaluate(`Array.from(window.authHost.querySelectorAll('button')).find(b => b.textContent === 'Log out').click()`); await pause(500);
   check(await evaluate(`!!window.authHost.querySelector('header a[href="/auth/login"]')`), 'logout accessible from verification onboarding');
   await evaluate(`window.accessHarness('/dashboard', true)`); await pause(300);
-  check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.testLocalState.transactions.length === 0 && window.authHost.textContent.includes('Local browser workspace.') && !/Developer Preview|Preview Data Enabled/.test(window.authHost.textContent)`), 'enforcement on: verified account reaches dashboard, which is empty, explicitly local, and ignores old preview flag');
+  check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.testLocalState.transactions.length === 0 && window.authHost.textContent.includes('Account finances, local planning.') && !/Developer Preview|Preview Data Enabled/.test(window.authHost.textContent)`), 'enforcement on: verified account reaches dashboard with account/local source disclosure and ignores old preview flag');
   await evaluate(`window.authHost.querySelector('header a[href="/settings"]').click()`); await pause(250);
   check(await evaluate(`!!window.authHost.querySelector('.financeos-premium') && window.authHost.textContent.includes('Settings') && !window.authHost.querySelector('.auth-form-heading')`), 'authenticated client navigation preserves access');
   await evaluate(`window.accessHarness('/', true, true)`); await pause(150);
@@ -297,6 +297,7 @@ try {
       })()`);
       if (brand.overflow || !brand.sized) { await screenshot('branding-overflow'); console.log('Overflow screenshot: ' + dir); }
       check(brand.count > 0 && brand.loaded && brand.sized && brand.correct && !brand.overlap && !brand.overflow && !brand.oldMark, `official branding fits ${path} at ${width}px: ${JSON.stringify(brand)}`);
+      if (path !== '/') check(brand.count === 1, `one brand logo on ${path} at ${width}px`);
       if ([375, 768, 1024, 1440].includes(width) && ['/', '/auth/login', '/dashboard'].includes(path)) await screenshot('branding-' + (path.split('/').pop() || 'landing') + '-' + width);
     }
   }
@@ -313,7 +314,11 @@ try {
     check(await evaluate(`window.authHost.querySelector('#dashboard-overview-title').textContent.startsWith('February ') && window.authHost.querySelector('button[aria-label="Planning period"]').textContent.includes('February')`), 'single selector updates dashboard month at ' + width);
     await evaluate(`window.authHost.querySelector('button[aria-label="Planning period"]').click()`); await pause(100);
     await evaluate(`var select = document.querySelector('select[aria-label="Budget year"]'); window.chosenBudgetYear = select.options[select.options.length - 1].value; Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, window.chosenBudgetYear); select.dispatchEvent(new Event('change', { bubbles: true }));`); await pause(150);
-    check(await evaluate(`window.authHost.querySelector('#dashboard-overview-title').textContent.includes(window.chosenBudgetYear) && window.authHost.querySelector('.financeos-topnav-budget').textContent.includes(window.chosenBudgetYear)`), 'single selector updates shared budget year at ' + width);
+    check(await evaluate(`window.authHost.querySelector('#dashboard-overview-title').textContent.includes(window.chosenBudgetYear) && window.authHost.querySelector('button[aria-label="Planning period"]').textContent.includes(window.chosenBudgetYear)`), 'single selector updates shared budget year at ' + width);
+    await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+    await send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 1, mobile: false });
+    await evaluate(`window.authHost.querySelector('[aria-label="Open navigation menu"]').click()`); await pause(100);
+    check(await evaluate(`(() => { const menu=window.authHost.querySelector('[role="menu"]'); const settings=menu.querySelector('a[href="/settings"]'); menu.scrollTop=menu.scrollHeight; return menu.getBoundingClientRect().bottom <= innerHeight && settings.getBoundingClientRect().bottom <= innerHeight && !!menu.querySelector('a[href="/annual-planner"]') && !!menu.querySelector('a[href="/expected-transactions"]'); })()`), 'all navigation entries remain reachable at ' + width);
     await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
   }
   console.log('Screenshots: ' + dir);

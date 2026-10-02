@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   Bell,
-  Building2,
-  CalendarDays,
   CreditCard,
+  CalendarDays,
   Download,
   Globe2,
   Moon,
@@ -21,9 +20,9 @@ import { Switch } from "../ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Separator } from "../ui/separator";
 import { MONTHS, currentYear } from "../../lib/constants";
-import { PaymentMethod, PaymentMethodType, PaymentNetwork, useFinanceData } from "../../lib/financeStore";
+import { useFinanceData } from "../../lib/financeStore";
 import { useFinanceOSTheme } from "../../lib/theme";
-import { PaymentMethodGrid, paymentMethodTypeOptions, paymentNetworkOptions } from "../common/PaymentMethodCards";
+import { Link } from "react-router";
 import { TimezoneSelector } from "../common/TimezoneSelector";
 import { toast } from "sonner";
 
@@ -32,12 +31,8 @@ export function Settings() {
     activeYear,
     startDayOfWeek,
     timezone,
-    paymentMethods,
     setActiveYear,
     updatePreferences,
-    addPaymentMethod,
-    updatePaymentMethod,
-    deletePaymentMethod,
     resetAppData,
   } = useFinanceData();
   const { theme, setTheme } = useFinanceOSTheme();
@@ -46,14 +41,6 @@ export function Settings() {
   const [defaultYear, setDefaultYear] = useState(activeYear);
   const [startMonth, setStartMonth] = useState("January");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [paymentMethodForm, setPaymentMethodForm] = useState({
-    id: "",
-    nickname: "",
-    type: "checking" as PaymentMethodType,
-    institutionName: "",
-    last4: "",
-    network: "" as "" | PaymentNetwork,
-  });
   const yearOptions = Array.from(new Set([
     String(Number(activeYear) - 1),
     activeYear,
@@ -64,44 +51,6 @@ export function Settings() {
   useEffect(() => {
     setDefaultYear(activeYear);
   }, [activeYear]);
-
-  function resetPaymentMethodForm() {
-    setPaymentMethodForm({ id: "", nickname: "", type: "checking", institutionName: "", last4: "", network: "" });
-  }
-
-  function editPaymentMethod(method: PaymentMethod) {
-    setPaymentMethodForm({
-      id: method.id,
-      nickname: method.nickname,
-      type: method.type,
-      institutionName: method.institutionName ?? "",
-      last4: method.last4 ?? "",
-      network: method.network ?? "",
-    });
-  }
-
-  function savePaymentMethod() {
-    if (!paymentMethodForm.nickname.trim()) {
-      toast.error("Payment method nickname is required.");
-      return;
-    }
-    const payload = {
-      nickname: paymentMethodForm.nickname.trim(),
-      type: paymentMethodForm.type,
-      institutionName: paymentMethodForm.institutionName.trim() || undefined,
-      last4: paymentMethodForm.last4.trim() || undefined,
-      network: paymentMethodForm.network || undefined,
-      isLinked: false,
-    };
-    if (paymentMethodForm.id) {
-      updatePaymentMethod(paymentMethodForm.id, payload);
-      toast.success("Payment method updated.");
-    } else {
-      addPaymentMethod(payload);
-      toast.success("Payment method added.");
-    }
-    resetPaymentMethodForm();
-  }
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-1 py-4 sm:px-2 lg:px-0">
@@ -244,43 +193,11 @@ export function Settings() {
       <Card className="financeos-control-card shadow-sm">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <span className="financeos-settings-icon flex h-10 w-10 items-center justify-center rounded-2xl">
-              <CreditCard className="h-4 w-4" />
-            </span>
-            <div>
-              <CardTitle className="text-base text-[var(--financeos-text-primary)]">Financial</CardTitle>
-              <p className="text-xs text-[var(--financeos-text-muted)]">Payment methods and future bank linking</p>
-            </div>
+            <span className="financeos-settings-icon flex h-10 w-10 items-center justify-center rounded-2xl"><CreditCard className="h-4 w-4" /></span>
+            <div><CardTitle className="text-base text-[var(--financeos-text-primary)]">Payment Methods</CardTitle><p className="text-xs text-[var(--financeos-text-muted)]">Manage your account-backed payment methods.</p></div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid gap-3 md:grid-cols-3">
-            <Input className="financeos-field" placeholder="Nickname" value={paymentMethodForm.nickname} onChange={(e) => setPaymentMethodForm({ ...paymentMethodForm, nickname: e.target.value })} />
-            <select className="financeos-select h-10 rounded-xl border px-3 text-sm outline-none focus:border-[#8B5CF6]/70 focus:ring-[3px] focus:ring-[#8B5CF6]/20" value={paymentMethodForm.type} onChange={(e) => setPaymentMethodForm({ ...paymentMethodForm, type: e.target.value as PaymentMethodType })}>
-              {paymentMethodTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-            <Input className="financeos-field" placeholder="Institution / bank" value={paymentMethodForm.institutionName} onChange={(e) => setPaymentMethodForm({ ...paymentMethodForm, institutionName: e.target.value })} />
-            <Input className="financeos-field" placeholder="Last 4 digits" maxLength={4} value={paymentMethodForm.last4} onChange={(e) => setPaymentMethodForm({ ...paymentMethodForm, last4: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
-            <select className="financeos-select h-10 rounded-xl border px-3 text-sm outline-none focus:border-[#8B5CF6]/70 focus:ring-[3px] focus:ring-[#8B5CF6]/20" value={paymentMethodForm.network} onChange={(e) => setPaymentMethodForm({ ...paymentMethodForm, network: e.target.value as "" | PaymentNetwork })}>
-              <option value="">Card network</option>
-              {paymentNetworkOptions.map((network) => <option key={network} value={network}>{network}</option>)}
-            </select>
-            <div className="flex gap-2">
-              <Button onClick={savePaymentMethod} className="flex-1 bg-blue-600 text-white hover:bg-blue-700">{paymentMethodForm.id ? "Update" : "Add"} Method</Button>
-              {paymentMethodForm.id && <Button variant="outline" onClick={resetPaymentMethodForm}>Cancel</Button>}
-            </div>
-          </div>
-          <PaymentMethodGrid paymentMethods={paymentMethods} onEdit={editPaymentMethod} onDelete={deletePaymentMethod} />
-          <div className="financeos-muted-panel rounded-2xl border border-dashed p-4 text-sm">
-            <div className="flex items-center gap-2 text-[var(--financeos-text-primary)]">
-              <Building2 className="h-4 w-4 text-[#8B5CF6]" />
-              Future bank linking
-            </div>
-            <p className="mt-1 text-xs">
-              TODO: future Plaid or bank API integration should populate institutionId, institutionLogo, brandColor, linkedAccountId, and isLinked metadata.
-            </p>
-          </div>
-        </CardContent>
+        <CardContent><Button asChild variant="outline"><Link to="/payment-methods">Manage payment methods</Link></Button></CardContent>
       </Card>
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

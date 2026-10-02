@@ -12,6 +12,7 @@ import {
 import { MONTHS, currentMonthIndex, currentYear } from "./constants";
 import { completeSetup as persistSetupComplete, getSetupProfile, resetSetup, SetupProfile } from "./setupState";
 import { getBrowserTimezone, StartDayOfWeek } from "./datePreferences";
+import type { SupabaseSnapshotActuals } from "./snapshotActuals";
 
 const STORAGE_KEY = "financeos:app-data:v1";
 
@@ -47,6 +48,10 @@ export interface MonthlyBudgetSummary {
   transaction_count: number;
   pending_transaction_count: number;
   notes: string;
+  snapshot_version?: 2;
+  actual_source?: "supabase" | "legacy";
+  expected_source?: "local";
+  snapshot_owner_id?: string;
 }
 
 export interface YearlyBudgetSummary {
@@ -77,6 +82,11 @@ export interface YearlyBudgetSummary {
     amount_left: number;
   }>;
   notes: string;
+  transaction_count?: number;
+  snapshot_version?: 2;
+  actual_source?: "supabase" | "legacy";
+  expected_source?: "local";
+  snapshot_owner_id?: string;
 }
 
 export interface SavedMonthlyBudget {
@@ -161,8 +171,8 @@ type FinanceAction =
   | { type: "DELETE_PAYMENT_PLAN"; id: string }
   | { type: "MARK_TRANSACTION_PAID"; id: string }
   | { type: "MARK_PAYMENT_PLAN_PAID"; id: string }
-  | { type: "SAVE_MONTHLY_BUDGET"; year: string; month: number; mode: SnapshotSaveMode }
-  | { type: "SAVE_YEARLY_BUDGET"; year: string; mode: SnapshotSaveMode }
+  | { type: "SAVE_MONTHLY_BUDGET"; year: string; month: number; mode: SnapshotSaveMode; actuals: SupabaseSnapshotActuals }
+  | { type: "SAVE_YEARLY_BUDGET"; year: string; mode: SnapshotSaveMode; actuals: SupabaseSnapshotActuals }
   | { type: "DELETE_SAVED_MONTHLY_BUDGET"; id: string }
   | { type: "DELETE_SAVED_YEARLY_BUDGET"; id: string }
   | { type: "UPDATE_SAVED_MONTHLY_BUDGET_NOTES"; id: string; notes: string }
@@ -263,16 +273,11 @@ function advancePaymentDate(plan: PaymentPlan) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildMonthlySummary(state: FinanceState, year: string, month: number): MonthlyBudgetSummary {
-  const yearTransactions = filterTransactionsByYear(state.transactions, year);
-  const actualAmounts = deriveActualAmounts(yearTransactions, year);
+export function buildMonthlySummary(state: FinanceState, year: string, month: number, snapshotActuals: SupabaseSnapshotActuals): MonthlyBudgetSummary {
   const pendingTransactions = derivePendingTransactions(state, year);
-  const actual = actualAmounts[month] ?? getZeroMonth(month);
+  const actual = snapshotActuals.monthly[month] ?? getZeroMonth(month);
   const expected = normalizeMonthlyPlans(state.expectedAmounts)[month] ?? getZeroMonth(month);
   const budgetYear = activeBudgetYear(state, year);
-  const monthTransactions = yearTransactions.filter((transaction) => {
-    return dateMonth(transaction.date) === month;
-  });
   const monthPendingTransactions = pendingTransactions.filter((transaction) => {
     return dateMonth(transaction.dueDate ?? transaction.date) === month;
   });
@@ -296,10 +301,14 @@ function buildMonthlySummary(state: FinanceState, year: string, month: number): 
     savings_rate: rate(actual.savings, actual.income),
     expense_rate: rate(actual.expenses, actual.income),
     debt_payment_rate: rate(actual.debt, actual.income),
-    category_breakdowns: getExpenseCategoryData(monthTransactions),
-    transaction_count: monthTransactions.length,
+    category_breakdowns: snapshotActuals.monthlyCategoryBreakdowns[month] ?? [],
+    transaction_count: snapshotActuals.monthlyTransactionCounts[month] ?? 0,
     pending_transaction_count: monthPendingTransactions.length,
     notes: state.monthlyNotes[month] ?? "",
+    snapshot_version: snapshotActuals.snapshot_version,
+    actual_source: snapshotActuals.actual_source,
+    expected_source: snapshotActuals.expected_source,
+    snapshot_owner_id: snapshotActuals.snapshot_owner_id,
   };
 }
 
@@ -312,12 +321,10 @@ function highestMonth(
   return [...tracked].sort((a, b) => b[field] - a[field])[0].month_label;
 }
 
-function buildYearlySummary(state: FinanceState, year: string): YearlyBudgetSummary {
-  const yearTransactions = filterTransactionsByYear(state.transactions, year);
-  const actualAmounts = deriveActualAmounts(yearTransactions, year);
+export function buildYearlySummary(state: FinanceState, year: string, snapshotActuals: SupabaseSnapshotActuals): YearlyBudgetSummary {
   const expectedAmounts = normalizeMonthlyPlans(state.expectedAmounts);
   const budgetYear = activeBudgetYear(state, year);
-  const yearly_monthly_breakdown = actualAmounts.map((month, index) => ({
+  const yearly_monthly_breakdown = snapshotActuals.monthly.map((month, index) => ({
     month: index,
     month_label: MONTHS[index],
     income: month.income,
@@ -326,7 +333,7 @@ function buildYearlySummary(state: FinanceState, year: string): YearlyBudgetSumm
     expenses: month.expenses,
     amount_left: getAmountLeft(month),
   }));
-  const totals = actualAmounts.reduce(
+  const totals = snapshotActuals.monthly.reduce(
     (sum, month) => ({
       income: sum.income + month.income,
       savings: sum.savings + month.savings,
@@ -362,9 +369,14 @@ function buildYearlySummary(state: FinanceState, year: string): YearlyBudgetSumm
     highest_income_month: highestMonth(yearly_monthly_breakdown, "income"),
     highest_expense_month: highestMonth(yearly_monthly_breakdown, "expenses"),
     highest_debt_payoff_month: highestMonth(yearly_monthly_breakdown, "debt"),
-    yearly_category_rankings: getExpenseCategoryData(yearTransactions),
+    yearly_category_rankings: snapshotActuals.yearlyCategoryBreakdowns,
     yearly_monthly_breakdown,
     notes: "",
+    transaction_count: snapshotActuals.transactionCount,
+    snapshot_version: snapshotActuals.snapshot_version,
+    actual_source: snapshotActuals.actual_source,
+    expected_source: snapshotActuals.expected_source,
+    snapshot_owner_id: snapshotActuals.snapshot_owner_id,
   };
 }
 
@@ -469,9 +481,10 @@ function reducer(state: FinanceState, action: FinanceAction): FinanceState {
       };
     }
     case "SAVE_MONTHLY_BUDGET": {
-      const summary = buildMonthlySummary(state, action.year, action.month);
+      const summary = buildMonthlySummary(state, action.year, action.month, action.actuals);
       const existing = state.savedMonthlyBudgets.find(
         (snapshot) => snapshot.year === action.year && snapshot.month === action.month
+          && snapshot.summary_json.snapshot_owner_id === action.actuals.snapshot_owner_id
       );
       const now = new Date().toISOString();
       if (existing && action.mode === "overwrite") {
@@ -500,8 +513,9 @@ function reducer(state: FinanceState, action: FinanceAction): FinanceState {
       };
     }
     case "SAVE_YEARLY_BUDGET": {
-      const summary = buildYearlySummary(state, action.year);
-      const existing = state.savedYearlyBudgets.find((snapshot) => snapshot.year === action.year);
+      const summary = buildYearlySummary(state, action.year, action.actuals);
+      const existing = state.savedYearlyBudgets.find((snapshot) => snapshot.year === action.year
+        && snapshot.summary_json.snapshot_owner_id === action.actuals.snapshot_owner_id);
       const now = new Date().toISOString();
       if (existing && action.mode === "overwrite") {
         return {
@@ -732,8 +746,8 @@ interface FinanceContextValue {
   updatePaymentPlan(id: string, updates: Partial<PaymentPlan>): void;
   deletePaymentPlan(id: string): void;
   markTransactionPaid(id: string): void;
-  saveMonthlyBudgetSnapshot(year: string, month: number, mode?: SnapshotSaveMode): void;
-  saveYearlyBudgetSnapshot(year: string, mode?: SnapshotSaveMode): void;
+  saveMonthlyBudgetSnapshot(year: string, month: number, actuals: SupabaseSnapshotActuals, mode?: SnapshotSaveMode): void;
+  saveYearlyBudgetSnapshot(year: string, actuals: SupabaseSnapshotActuals, mode?: SnapshotSaveMode): void;
   deleteSavedMonthlyBudget(id: string): void;
   deleteSavedYearlyBudget(id: string): void;
   updateSavedMonthlyBudgetNotes(id: string, notes: string): void;
@@ -814,8 +828,8 @@ export function FinanceDataProvider({ children }: { children: ReactNode }) {
         activeDispatch({ type: "MARK_TRANSACTION_PAID", id });
       }
     },
-    saveMonthlyBudgetSnapshot: (year, month, mode = "overwrite") => activeDispatch({ type: "SAVE_MONTHLY_BUDGET", year, month, mode }),
-    saveYearlyBudgetSnapshot: (year, mode = "overwrite") => activeDispatch({ type: "SAVE_YEARLY_BUDGET", year, mode }),
+    saveMonthlyBudgetSnapshot: (year, month, actuals, mode = "overwrite") => activeDispatch({ type: "SAVE_MONTHLY_BUDGET", year, month, mode, actuals }),
+    saveYearlyBudgetSnapshot: (year, actuals, mode = "overwrite") => activeDispatch({ type: "SAVE_YEARLY_BUDGET", year, mode, actuals }),
     deleteSavedMonthlyBudget: (id) => activeDispatch({ type: "DELETE_SAVED_MONTHLY_BUDGET", id }),
     deleteSavedYearlyBudget: (id) => activeDispatch({ type: "DELETE_SAVED_YEARLY_BUDGET", id }),
     updateSavedMonthlyBudgetNotes: (id, notes) => activeDispatch({ type: "UPDATE_SAVED_MONTHLY_BUDGET_NOTES", id, notes }),

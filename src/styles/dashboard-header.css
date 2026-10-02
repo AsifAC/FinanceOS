@@ -18,7 +18,6 @@
 .financeos-topnav-brand { display: flex; flex: none; }
 .financeos-topnav-context { min-width: 0; }
 .financeos-topnav-title { display: block; font-size: 14px; font-weight: 600; color: var(--financeos-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.financeos-topnav-budget { display: block; margin-top: 3px; font-size: 11px; color: var(--financeos-text-muted); }
 .financeos-topnav-period { min-width: 176px; }
 .financeos-topnav-period > div > button {
   border-radius: 8px;
@@ -62,14 +61,14 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 28px;
-  padding: 8px 12px;
-  border: 1px solid var(--financeos-border);
+  margin-bottom: 20px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--financeos-border);
   border-radius: 6px;
   background: var(--financeos-surface);
   color: var(--financeos-text-muted);
   font-size: 11px;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 .financeos-workspace-note svg { flex: none; margin-top: 1px; }
 .financeos-workspace-note strong { color: var(--financeos-text-secondary); font-weight: 500; }
@@ -107,7 +106,7 @@
   .financeos-topnav-actions { gap: 0; }
   .financeos-topnav-title { font-size: 13px; }
   .financeos-topnav-identity { gap: 8px; }
-  .financeos-workspace-note { margin-bottom: 24px; }
+  .financeos-workspace-note { margin-bottom: 20px; }
   .financeos-overview-actions { gap: 12px; flex-wrap: wrap; }
   .financeos-overview-buttons { gap: 8px; }
   .financeos-quick-action { padding: 0 12px; }

@@ -19,6 +19,7 @@ export function useTransactions({ enabled = true }: { enabled?: boolean } = {}) 
   const run = useCallback(async <T,>(
     operation: () => Promise<service.TransactionServiceResult<T>>,
     onSuccess?: (data: T) => void,
+    trackError = true,
   ): Promise<service.TransactionServiceResult<T>> => {
     const generation = scope.current.generation;
     if (!owner || scope.current.owner !== owner) {
@@ -26,10 +27,10 @@ export function useTransactions({ enabled = true }: { enabled?: boolean } = {}) 
         code: "not_authenticated", message: "Enable real transactions and sign in before continuing.",
       } };
     }
-    setState((current) => ({ ...current, pending: current.pending + 1, error: null }));
+    setState((current) => ({ ...current, pending: current.pending + 1, error: trackError ? null : current.error }));
     const result = await operation();
     if (scope.current.generation === generation && scope.current.owner === owner) {
-      setState((current) => ({ ...current, pending: Math.max(0, current.pending - 1), error: result.error }));
+      setState((current) => ({ ...current, pending: Math.max(0, current.pending - 1), error: trackError ? result.error : current.error }));
       if (result.ok) onSuccess?.(result.data);
     }
     return result;
@@ -55,11 +56,17 @@ export function useTransactions({ enabled = true }: { enabled?: boolean } = {}) 
   }, [owner, refresh]);
 
   const createTransaction = useCallback((input: service.CreateTransactionInput) =>
-    run(() => service.createTransaction(input), () => { void refresh(); }), [run, refresh]);
+    run(() => service.createTransaction(input, owner ?? undefined), () => { void refresh(); }), [owner, run, refresh]);
   const updateTransaction = useCallback((id: string, input: service.UpdateTransactionInput) =>
-    run(() => service.updateTransaction(id, input), () => { void refresh(); }), [run, refresh]);
+    run(() => service.updateTransaction(id, input, owner ?? undefined), (updated) => {
+      setState((current) => ({ ...current, transactions: current.transactions.map((row) => row.id === id ? updated : row) }));
+      void refresh();
+    }, false), [owner, run, refresh]);
   const deleteTransaction = useCallback((id: string) =>
-    run(() => service.deleteTransaction(id), () => { void refresh(); }), [run, refresh]);
+    run(() => service.deleteTransaction(id, owner ?? undefined), () => {
+      setState((current) => ({ ...current, transactions: current.transactions.filter((row) => row.id !== id) }));
+      void refresh();
+    }, false), [owner, run, refresh]);
 
   // Hide previous-account data immediately, even before effect cleanup runs.
   const visible = owner !== null && state.owner === owner;

@@ -7,6 +7,8 @@ import { SetupRoute } from "./components/routing/SetupRoute";
 import { Dashboard } from "./components/screens/Dashboard";
 import { AnnualPlanner } from "./components/screens/AnnualPlanner";
 import { ExpenseTracker } from "./components/screens/ExpenseTracker";
+import { Transactions } from "./components/screens/Transactions";
+import { ExpectedTransactions } from "./components/screens/ExpectedTransactions";
 import { IncomeTracker } from "./components/screens/IncomeTracker";
 import { PendingTransactions } from "./components/screens/PendingTransactions";
 import { AddTransaction } from "./components/screens/AddTransaction";
@@ -17,6 +19,7 @@ import { TrackerUI } from "./components/screens/TrackerUI";
 import { Reports } from "./components/screens/Reports";
 import { SavedBudgets } from "./components/screens/SavedBudgets";
 import { Settings } from "./components/screens/Settings";
+import { PaymentMethods } from "./components/screens/PaymentMethods";
 import { Notifications } from "./components/screens/Notifications";
 import { HelpCenter } from "./components/screens/HelpCenter";
 import { LandingPage } from "./components/screens/LandingPage";
@@ -39,10 +42,12 @@ export const router = createBrowserRouter([
       { path: "annual-planner", Component: AnnualPlanner },
       { path: "income", Component: IncomeTracker },
       { path: "expenses", Component: ExpenseTracker },
-      { path: "transactions", element: createElement(Navigate, { to: "/expenses", replace: true }) },
+      { path: "transactions", Component: Transactions },
+      { path: "expected-transactions", Component: ExpectedTransactions },
       { path: "pending-transactions", Component: PendingTransactions },
       { path: "add-transaction", Component: AddTransaction },
       { path: "categories", Component: Categories },
+      { path: "payment-methods", Component: PaymentMethods },
       { path: "expected-amounts", Component: ExpectedAmounts },
       { path: "payment-plans", Component: PaymentPlans },
       { path: "tracker", Component: TrackerUI },

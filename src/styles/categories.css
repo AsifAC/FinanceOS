@@ -1,0 +1,59 @@
+.account-categories { max-width: 1100px; margin: 0 auto; padding: 26px 24px 40px; color: var(--financeos-text-primary); }
+.account-categories-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
+.account-categories-heading-actions { display: flex; align-items: center; gap: 8px; }
+.account-categories-heading h1 { margin: 3px 0 0; font-size: clamp(24px, 3vw, 32px); line-height: 1.2; font-weight: 650; letter-spacing: -.7px; color: var(--financeos-text-primary); }
+.account-categories-heading p:last-child { margin: 8px 0 0; color: var(--financeos-text-muted); font-size: 13px; }
+.account-categories-eyebrow { margin: 0; color: #84cc16; font-size: 10px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+.account-categories-summary { margin: 0 0 12px; color: var(--financeos-text-muted); font-size: 12px; }
+.account-categories-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.account-category-group, .account-categories-state { min-width: 0; border: 1px solid var(--financeos-border); border-radius: 14px; background: var(--financeos-surface); }
+.account-category-group > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 16px; border-bottom: 1px solid var(--financeos-border); }
+.account-category-group > header h2 { margin: 0; color: var(--financeos-text-primary); font-size: 13px; font-weight: 620; }
+.account-category-group > header > span { display: inline-flex; min-width: 23px; height: 23px; align-items: center; justify-content: center; border: 1px solid var(--financeos-border); border-radius: 999px; color: var(--financeos-text-muted); font-size: 10px; }
+.account-category-group ul { margin: 0; padding: 5px 12px; list-style: none; }
+.account-category-row { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid color-mix(in srgb, var(--financeos-border) 70%, transparent); }
+.account-category-row:last-child { border-bottom: 0; }
+.account-category-row.is-archived { opacity: .75; }
+.account-category-icon { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; overflow: hidden; border: 1px solid var(--financeos-border); border-radius: 9px; color: var(--financeos-text-secondary); font-size: 14px; }
+.account-category-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.account-category-copy strong { overflow: hidden; color: var(--financeos-text-primary); font-size: 12px; font-weight: 580; text-overflow: ellipsis; white-space: nowrap; }
+.account-category-copy > span { color: var(--financeos-text-muted); font-size: 10px; }
+.account-category-badges, .account-category-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
+.account-category-badge { padding: 3px 7px; border: 1px solid var(--financeos-border); border-radius: 999px; color: var(--financeos-text-muted); font-size: 9px; }
+.account-category-badge.is-default { border-color: color-mix(in srgb, #84cc16 45%, var(--financeos-border)); color: #84cc16; }
+.account-category-badge.is-archived { background: var(--financeos-bg-secondary); }
+.account-category-actions button { height: 29px; gap: 5px; padding: 0 7px; color: var(--financeos-text-muted); font-size: 10px; }
+.account-category-actions button:hover { color: var(--financeos-text-primary); }
+.account-category-actions button:last-child:hover { color: var(--financeos-accent); }
+.account-category-empty { margin: 0; padding: 24px 12px; color: var(--financeos-text-muted); text-align: center; font-size: 12px; }
+.account-category-archive { margin-top: 14px; }
+.account-category-hint { margin: 0; padding: 0 16px 14px; color: var(--financeos-text-muted); font-size: 11px; line-height: 1.5; }
+.account-categories-state { display: flex; min-height: 220px; flex-direction: column; align-items: center; justify-content: center; padding: 26px; text-align: center; color: var(--financeos-text-muted); }
+.account-categories-state h2 { margin: 12px 0 0; color: var(--financeos-text-primary); font-size: 16px; font-weight: 620; }
+.account-categories-state p { max-width: 430px; margin: 8px 0 16px; font-size: 12px; line-height: 1.6; }
+.account-categories-state[aria-label="Loading categories"] { gap: 10px; font-size: 12px; }
+.account-categories-skeleton { display: grid; width: min(480px, 100%); gap: 8px; margin-top: 10px; }
+.account-categories-skeleton span { height: 31px; border-radius: 7px; background: color-mix(in srgb, var(--financeos-border) 68%, transparent); }
+.account-category-form { display: grid; gap: 16px; padding-top: 10px; }
+.account-category-form > div > label, .account-category-color-row label { display: block; margin-bottom: 6px; color: var(--financeos-text-secondary); font-size: 12px; }
+.account-category-form select { width: 100%; height: 40px; padding: 0 11px; border: 1px solid var(--financeos-input-border); border-radius: 9px; background: var(--financeos-input-bg); color: var(--financeos-text-primary); font: inherit; font-size: 13px; }
+.account-category-form select:disabled { opacity: .72; cursor: not-allowed; }
+.account-category-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.account-category-color-row { display: grid; grid-template-columns: 90px 18px minmax(0, 1fr); align-items: end; gap: 10px; }
+.account-category-color-row input[type="color"] { display: block; width: 100%; height: 39px; padding: 3px; }
+.account-category-color-preview { width: 14px; height: 14px; margin-bottom: 12px; border: 1px solid var(--financeos-border); border-radius: 50%; }
+.account-category-form-error { margin: 0; color: #f87171; font-size: 12px; }
+.account-category-form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 2px; }
+@media (max-width: 800px) {
+  .account-categories { padding: 22px 18px 32px; }
+  .account-categories-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .account-categories { padding: 18px 14px 28px; }
+  .account-categories-heading { align-items: stretch; flex-direction: column; }
+  .account-categories-heading-actions { width: 100%; flex-wrap: wrap; justify-content: flex-start; }
+  .account-category-row { flex-wrap: wrap; }
+  .account-category-copy { min-width: calc(100% - 48px); }
+  .account-category-badges { margin-left: 40px; }
+  .account-category-actions { margin-left: auto; }
+}

@@ -1,203 +1,239 @@
-import { useState } from "react";
-import { PlusCircle, Pencil, Trash2, GripVertical } from "lucide-react";
+import { useRef, useState } from "react";
+import type { FormEvent } from "react";
+import { Archive, Check, LoaderCircle, Pencil, Plus, RotateCcw, RefreshCw } from "lucide-react";
+import { useCategories } from "../../../hooks/useCategories";
+import type { Category, SupabaseCategoryType } from "../../../types/supabase";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Badge } from "../ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Category, CategoryType } from "../../data/data";
-import { useFinanceData } from "../../lib/financeStore";
-import { toast } from "sonner";
+import { getSelectableCategories } from "../../lib/selectableCategories";
+import "../../../styles/categories.css";
 
-const typeConfig: Record<CategoryType, { label: string; color: string; bg: string; border: string }> = {
-  income: { label: "Income", color: "text-green-700", bg: "bg-green-50", border: "border-green-200" },
-  savings: { label: "Savings", color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200" },
-  debt: { label: "Debt", color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
-  expense: { label: "Expense", color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
+const categoryTypes: SupabaseCategoryType[] = ["income", "expense", "savings", "debt"];
+const typeLabels: Record<SupabaseCategoryType, string> = {
+  income: "Income", expense: "Expense", savings: "Savings", debt: "Debt",
 };
+type CategoryForm = { name: string; type: SupabaseCategoryType; icon: string; color: string; sortOrder: string };
+const emptyForm = (): CategoryForm => ({ name: "", type: "expense", icon: "", color: "#84cc16", sortOrder: "0" });
+
+function errorMessage(code?: string) {
+  if (code === "23505") return "A category with this name and type already exists.";
+  if (code === "not_authenticated") return "Your session has expired. Sign in again to manage categories.";
+  return "We couldn’t save that category. Please try again.";
+}
+
+function CategoryRow({ category, onEdit, onArchive, onRestore, busy }: {
+  category: Category;
+  onEdit(category: Category): void;
+  onArchive(category: Category): void;
+  onRestore(category: Category): void;
+  busy: boolean;
+}) {
+  const archived = category.is_archived === true;
+  return (
+    <li className={`account-category-row${archived ? " is-archived" : ""}`} data-category-id={category.id}>
+      <span className="account-category-icon" aria-hidden="true">{category.icon || "•"}</span>
+      <span className="account-category-copy">
+        <strong>{category.name}</strong>
+        <span>{typeLabels[category.type]}{category.sort_order != null ? ` · Order ${category.sort_order}` : ""}</span>
+      </span>
+      <span className="account-category-badges">
+        {category.is_default && <span className="account-category-badge is-default">Default</span>}
+        {archived && <span className="account-category-badge is-archived">Archived</span>}
+      </span>
+      <span className="account-category-actions">
+        <Button type="button" variant="ghost" size="sm" disabled={busy} aria-label={`Edit category ${category.name}`} onClick={() => onEdit(category)}>
+          <Pencil size={14} aria-hidden="true" /> Edit
+        </Button>
+        {archived ? (
+          <Button type="button" variant="ghost" size="sm" disabled={busy} aria-label={`Restore category ${category.name}`} onClick={() => onRestore(category)}>
+            <RotateCcw size={14} aria-hidden="true" /> Restore
+          </Button>
+        ) : (
+          <Button type="button" variant="ghost" size="sm" disabled={busy} aria-label={`Archive category ${category.name}`} onClick={() => onArchive(category)}>
+            <Archive size={14} aria-hidden="true" /> Archive
+          </Button>
+        )}
+      </span>
+    </li>
+  );
+}
 
 export function Categories() {
-  const { categories: cats, addCategory, updateCategory, deleteCategory } = useFinanceData();
+  const { categories, isLoading, loadError, refreshCategories, createCategory, updateCategory, archiveCategory } = useCategories();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: "", type: "expense" as CategoryType, icon: "📦", color: "#f97316" });
+  const [form, setForm] = useState<CategoryForm>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const archivedCategories = categories.filter((category) => category.is_archived === true);
+  const activeCount = categories.filter((category) => category.is_archived !== true).length;
 
-  function openAdd() {
+  function openCreate() {
     setEditing(null);
-    setForm({ name: "", type: "expense", icon: "📦", color: "#f97316" });
+    setForm(emptyForm());
+    setFormError(null);
     setOpen(true);
   }
 
-  function openEdit(cat: Category) {
-    setEditing(cat);
-    setForm({ name: cat.name, type: cat.type, icon: cat.icon, color: cat.color });
+  function openEdit(category: Category) {
+    setEditing(category);
+    setForm({ name: category.name, type: category.type, icon: category.icon ?? "", color: category.color ?? "#84cc16", sortOrder: category.sort_order == null ? "" : String(category.sort_order) });
+    setFormError(null);
     setOpen(true);
   }
 
-  function handleSave() {
-    if (!form.name.trim()) { toast.error("Category name is required"); return; }
-    if (editing) {
-      updateCategory(editing.id, form);
-      toast.success("Category updated");
-    } else {
-      addCategory(form);
-      toast.success("Category added");
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (savingRef.current) return;
+    const name = form.name.trim();
+    const sortOrder = form.sortOrder.trim() === "" ? undefined : Number(form.sortOrder);
+    if (!name) { setFormError("Enter a category name."); return; }
+    if (!categoryTypes.includes(form.type)) { setFormError("Choose a valid category type."); return; }
+    if (sortOrder !== undefined && !Number.isSafeInteger(sortOrder)) { setFormError("Sort order must be a whole number."); return; }
+    if (form.color && !/^#[0-9a-fA-F]{6}$/.test(form.color)) { setFormError("Enter a valid six-digit hex color."); return; }
+
+    savingRef.current = true;
+    setSaving(true);
+    setFormError(null);
+    const payload = { name, icon: form.icon.trim() || null, color: form.color || null, ...(sortOrder === undefined ? {} : { sort_order: sortOrder }) };
+    try {
+      const result = editing
+        ? await updateCategory(editing.id, payload)
+        : await createCategory({ ...payload, type: form.type });
+      if (!result.ok) {
+        if (result.error.code === "account_changed") return;
+        setFormError(errorMessage(result.error.code));
+        return;
+      }
+      toast.success(editing ? "Category updated" : "Category created");
+      setOpen(false);
+    } catch {
+      setFormError(errorMessage());
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-    setOpen(false);
   }
 
-  function handleDelete(id: string) {
-    deleteCategory(id);
-    toast.success("Category removed");
+  async function handleArchive(category: Category, archived: boolean) {
+    if (busyId) return;
+    setBusyId(category.id);
+    try {
+      const result = archived
+        ? await archiveCategory(category.id)
+        : await updateCategory(category.id, { is_archived: false });
+      if (!result.ok) {
+        if (result.error.code === "account_changed") return;
+        toast.error(errorMessage(result.error.code));
+        return;
+      }
+      toast.success(archived ? "Category archived" : "Category restored");
+    } catch {
+      toast.error(errorMessage());
+    } finally {
+      setBusyId(null);
+    }
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <section className="account-categories" aria-labelledby="categories-title">
+      <header className="account-categories-heading">
         <div>
-          <h1 className="text-slate-900">Categories</h1>
-          <p className="text-slate-500 text-sm">Manage your budget categories</p>
+          <p className="account-categories-eyebrow">Account settings · Supabase synced</p>
+          <h1 id="categories-title">Categories</h1>
+          <p>Manage the categories linked to your account transactions.</p>
         </div>
-        <Button onClick={openAdd} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-          <PlusCircle className="w-4 h-4" /> Add Category
-        </Button>
-      </div>
+        <div className="account-categories-heading-actions">
+          <Button type="button" variant="outline" onClick={() => void refreshCategories()} disabled={isLoading} aria-label="Refresh categories">
+            <RefreshCw size={15} aria-hidden="true" /> Refresh
+          </Button>
+          <Button type="button" onClick={openCreate} disabled={isLoading}>
+            <Plus size={16} aria-hidden="true" /> Add category
+          </Button>
+        </div>
+      </header>
 
-      {cats.length === 0 && (
-        <Card className="shadow-sm border-blue-200">
-          <CardContent className="p-5">
-            <p className="text-sm text-[var(--financeos-text-primary)]" style={{ fontWeight: 600 }}>No categories yet.</p>
-            <Button onClick={openAdd} className="mt-3 gap-2">
-              <PlusCircle className="w-4 h-4" /> Add Category
-            </Button>
-          </CardContent>
-        </Card>
+      {isLoading ? (
+        <div className="account-categories-state" role="status" aria-label="Loading categories">
+          <LoaderCircle className="animate-spin" size={20} aria-hidden="true" /> Loading your account categories…
+          <div className="account-categories-skeleton" aria-hidden="true"><span /><span /><span /></div>
+        </div>
+      ) : loadError ? (
+        <div className="account-categories-state" role="alert">
+          <h2>Unable to load categories</h2>
+          <p>Your account categories could not be loaded. Your local categories are not shown here.</p>
+          <Button type="button" variant="outline" onClick={() => void refreshCategories()}>Retry</Button>
+        </div>
+      ) : categories.length === 0 ? (
+        <div className="account-categories-state" role="status">
+          <Check size={22} aria-hidden="true" />
+          <h2>No account categories yet</h2>
+          <p>Create a category to organize future account-backed transactions. Local categories are kept separate.</p>
+          <Button type="button" onClick={openCreate}><Plus size={16} aria-hidden="true" /> Create category</Button>
+        </div>
+      ) : (
+        <>
+          <div className="account-categories-summary" aria-live="polite">{activeCount} active · {archivedCategories.length} archived</div>
+          <div className="account-categories-grid">
+            {categoryTypes.map((type) => {
+              const items = getSelectableCategories(categories, type);
+              return (
+                <section className="account-category-group" key={type} aria-labelledby={`categories-${type}`}>
+                  <header><h2 id={`categories-${type}`}>{typeLabels[type]} categories</h2><span>{items.length}</span></header>
+                  {items.length === 0 ? <p className="account-category-empty">No active {typeLabels[type].toLowerCase()} categories.</p> : (
+                    <ul>{items.map((category) => <CategoryRow key={category.id} category={category} onEdit={openEdit} onArchive={(item) => void handleArchive(item, true)} onRestore={(item) => void handleArchive(item, false)} busy={busyId === category.id || busyId !== null} />)}</ul>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+          {archivedCategories.length > 0 && (
+            <section className="account-category-group account-category-archive" aria-labelledby="archived-categories-title">
+              <header><h2 id="archived-categories-title">Archived categories</h2><span>{archivedCategories.length}</span></header>
+              <ul>{archivedCategories.map((category) => <CategoryRow key={category.id} category={category} onEdit={openEdit} onArchive={(item) => void handleArchive(item, true)} onRestore={(item) => void handleArchive(item, false)} busy={busyId === category.id || busyId !== null} />)}</ul>
+              <p className="account-category-hint">Archived categories remain linked to historical transactions and are excluded from future selection.</p>
+            </section>
+          )}
+        </>
       )}
 
-      <div className="grid grid-cols-2 gap-5">
-        {(["income", "savings", "debt", "expense"] as CategoryType[]).map((type) => {
-          const config = typeConfig[type];
-          const items = cats.filter((c) => c.type === type);
-          return (
-            <Card key={type} className={`shadow-sm border ${config.border}`}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className={`text-sm ${config.color}`}>{config.label} Categories</CardTitle>
-                  <Badge className={`${config.bg} ${config.color} border-0 text-xs`}>{items.length}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {items.length === 0 ? (
-                  <div className="py-6 text-center text-slate-400">
-                    <p className="text-sm">No {type} categories yet.</p>
-                    <button type="button" onClick={openAdd} className="text-xs text-blue-600 mt-1 hover:underline">Add one</button>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {items.map((cat) => (
-                      <div
-                        key={cat.id}
-                        className="financeos-category-row group flex items-center gap-3 rounded-lg border border-transparent p-2.5 transition-colors hover:bg-slate-50"
-                      >
-                        <GripVertical className="financeos-category-grip h-3.5 w-3.5 cursor-grab text-slate-300" />
-                        <span className="text-base">{cat.icon}</span>
-                        <div className="flex-1">
-                          <p className="financeos-category-name text-sm text-slate-800">{cat.name}</p>
-                        </div>
-                        <div
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ background: cat.color }}
-                        />
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="financeos-category-action h-6 w-6"
-                            onClick={() => openEdit(cat)}
-                          >
-                            <Pencil className="financeos-category-edit-icon h-3 w-3 text-slate-400" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="financeos-category-action h-6 w-6"
-                            onClick={() => handleDelete(cat.id)}
-                          >
-                            <Trash2 className="financeos-category-delete-icon h-3 w-3 text-red-400" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Add/Edit Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit Category" : "Add Category"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
+      <Dialog open={open} onOpenChange={(nextOpen) => { if (!saving) setOpen(nextOpen); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editing ? "Edit category" : "Create category"}</DialogTitle></DialogHeader>
+          <form className="account-category-form" onSubmit={(event) => void handleSave(event)}>
             <div>
-              <Label>Name</Label>
-              <Input
-                className="mt-1"
-                placeholder="Category name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
+              <Label htmlFor="account-category-name">Name</Label>
+              <Input id="account-category-name" autoFocus maxLength={80} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required />
             </div>
             <div>
-              <Label>Type</Label>
-              <select
-                className="mt-1 w-full rounded-xl border border-[var(--financeos-input-border)] bg-[var(--financeos-input-bg)] px-3 py-2 text-sm text-[var(--financeos-text-primary)] outline-none transition-[color,box-shadow] focus:border-[#8B5CF6]/70 focus:ring-[3px] focus:ring-[#8B5CF6]/20"
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value as CategoryType })}
-              >
-                <option value="income">Income</option>
-                <option value="savings">Savings</option>
-                <option value="debt">Debt</option>
-                <option value="expense">Expense</option>
+              <Label htmlFor="account-category-type">Type</Label>
+              <select id="account-category-type" value={form.type} disabled={editing !== null} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value as SupabaseCategoryType }))}>
+                {categoryTypes.map((type) => <option key={type} value={type}>{typeLabels[type]}</option>)}
               </select>
+              {editing && <p className="account-category-hint">Type is fixed after creation to keep historical transaction categories consistent.</p>}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Icon (emoji)</Label>
-                <Input
-                  className="mt-1"
-                  placeholder="📦"
-                  value={form.icon}
-                  onChange={(e) => setForm({ ...form, icon: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Color</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="color"
-                    value={form.color}
-                    onChange={(e) => setForm({ ...form, color: e.target.value })}
-                    className="h-9 w-9 cursor-pointer rounded-xl border border-[var(--financeos-input-border)] bg-[var(--financeos-input-bg)]"
-                  />
-                  <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="flex-1" />
-                </div>
-              </div>
+            <div className="account-category-form-grid">
+              <div><Label htmlFor="account-category-icon">Icon (optional)</Label><Input id="account-category-icon" maxLength={12} value={form.icon} onChange={(event) => setForm((current) => ({ ...current, icon: event.target.value }))} /></div>
+              <div><Label htmlFor="account-category-sort">Sort order (optional)</Label><Input id="account-category-sort" type="number" step="1" value={form.sortOrder} onChange={(event) => setForm((current) => ({ ...current, sortOrder: event.target.value }))} /></div>
             </div>
-            <div className="flex gap-2 pt-1">
-              <Button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                {editing ? "Update" : "Add Category"}
-              </Button>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <div className="account-category-color-row">
+              <div><Label htmlFor="account-category-color">Color</Label><Input id="account-category-color" type="color" value={form.color} onChange={(event) => setForm((current) => ({ ...current, color: event.target.value }))} /></div>
+              <span className="account-category-color-preview" style={{ background: form.color }} aria-hidden="true" />
+              <Input aria-label="Color hex value" value={form.color} maxLength={7} onChange={(event) => setForm((current) => ({ ...current, color: event.target.value }))} />
             </div>
-          </div>
+            {formError && <p className="account-category-form-error" role="alert">{formError}</p>}
+            <div className="account-category-form-actions">
+              <Button type="submit" disabled={saving || !form.name.trim()}>{saving && <LoaderCircle className="animate-spin" size={15} />} {saving ? "Saving…" : editing ? "Save changes" : "Create category"}</Button>
+              <Button type="button" variant="outline" disabled={saving} onClick={() => setOpen(false)}>Cancel</Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   );
 }

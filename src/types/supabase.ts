@@ -76,6 +76,94 @@ export type Database = {
           },
         ];
       };
+      budget_snapshots: {
+        Row: {
+          id: string;
+          user_id: string;
+          snapshot_scope: "month" | "year";
+          snapshot_year: number;
+          snapshot_month: number | null;
+          snapshot_version: number;
+          actual_source: "supabase" | "legacy";
+          expected_source: "local";
+          summary: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          snapshot_scope: "month" | "year";
+          snapshot_year: number;
+          snapshot_month?: number | null;
+          snapshot_version?: number;
+          actual_source?: "supabase" | "legacy";
+          expected_source?: "local";
+          summary: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["budget_snapshots"]["Insert"]>;
+        Relationships: [];
+      };
+      expected_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          amount: number;
+          type: SupabaseTransactionType;
+          expected_date: string;
+          category_id: string | null;
+          payment_method_id: string | null;
+          notes: string | null;
+          status: SupabaseExpectedTransactionStatus;
+          actual_transaction_id: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          title: string;
+          amount: number;
+          type: SupabaseTransactionType;
+          expected_date: string;
+          category_id?: string | null;
+          payment_method_id?: string | null;
+          notes?: string | null;
+          status?: SupabaseExpectedTransactionStatus;
+          actual_transaction_id?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["expected_transactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "expected_transactions_category_owner_type_fk";
+            columns: ["user_id", "category_id", "type"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["user_id", "id", "type"];
+          },
+          {
+            foreignKeyName: "expected_transactions_payment_method_owner_fk";
+            columns: ["user_id", "payment_method_id"];
+            isOneToOne: false;
+            referencedRelation: "payment_methods";
+            referencedColumns: ["user_id", "id"];
+          },
+          {
+            foreignKeyName: "expected_transactions_actual_owner_fk";
+            columns: ["user_id", "actual_transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
+            referencedColumns: ["user_id", "id"];
+          },
+        ];
+      };
       categories: {
         Row: {
           id: string;
@@ -274,6 +362,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      complete_expected_transaction: {
+        Args: { p_expected_transaction_id: string; p_title: string; p_amount: number; p_transaction_date: string; p_category_id: string | null; p_payment_method_id: string | null; p_notes: string | null };
+        Returns: Json;
+      };
       complete_account_verification: {
         Args: { channel: "email" | "phone" };
         Returns: Database["public"]["Tables"]["profiles"]["Row"];
@@ -293,9 +385,13 @@ export type Database = {
 export type SupabaseCategoryType = "income" | "expense" | "savings" | "debt";
 export type SupabaseTransactionType = "income" | "expense" | "savings" | "debt";
 export type SupabaseTransactionSource = "manual" | "recurring" | "import" | "migration";
+export type SupabaseExpectedTransactionStatus = "planned" | "completed" | "cancelled";
 export type Transaction = Database["public"]["Tables"]["transactions"]["Row"];
 export type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
 export type TransactionUpdate = Database["public"]["Tables"]["transactions"]["Update"];
+export type ExpectedTransaction = Database["public"]["Tables"]["expected_transactions"]["Row"];
+export type ExpectedTransactionInsert = Database["public"]["Tables"]["expected_transactions"]["Insert"];
+export type ExpectedTransactionUpdate = Database["public"]["Tables"]["expected_transactions"]["Update"];
 export type SupabasePaymentMethodType =
   | "cash"
   | "checking"

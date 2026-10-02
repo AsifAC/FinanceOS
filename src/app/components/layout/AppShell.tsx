@@ -10,6 +10,8 @@ import { patchSonnerToast } from "../../lib/notifications";
 import { RequireAuth } from "../auth/RequireAuth";
 import { RequireVerified } from "../auth/RequireVerified";
 import { FinanceDataProvider } from "../../lib/financeStore";
+import { ActualTransactionsLayout } from "./ActualTransactionsLayout";
+import { useAuth } from "../../../hooks/useAuth";
 
 export function AppShell() {
   const location = useLocation();
@@ -17,6 +19,17 @@ export function AppShell() {
   if (location.pathname === "/auth/verify") return <RequireAuth><Outlet /></RequireAuth>;
   if (location.pathname === "/" || /^\/auth\/(login|signup)\/?$/.test(location.pathname)) {
     return <Outlet />;
+  }
+
+  // Account-backed transaction metadata screens must never hydrate or persist the legacy financial store.
+  if (/^\/(transactions|expected-transactions|categories|payment-methods|add-transaction)\/?$/i.test(location.pathname)) {
+    return (
+      <RequireAuth>
+        <RequireVerified>
+          <FinanceOSThemeProvider><ActualTransactionsLayout section={location.pathname.toLowerCase().includes("expected-transactions") ? "expected-transactions" : location.pathname.toLowerCase().includes("categories") ? "categories" : location.pathname.toLowerCase().includes("payment-methods") ? "payment-methods" : location.pathname.toLowerCase().includes("add-transaction") ? "add-transaction" : "transactions"} /></FinanceOSThemeProvider>
+        </RequireVerified>
+      </RequireAuth>
+    );
   }
 
   return (
@@ -34,6 +47,7 @@ export function AppShell() {
 
 function AppShellContent() {
   const { theme } = useFinanceOSTheme();
+  const { user } = useAuth();
 
   useEffect(() => {
     patchSonnerToast(toast);
@@ -45,10 +59,10 @@ function AppShellContent() {
       <main className="relative mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         <aside className="financeos-workspace-note" aria-label="Local workspace information">
           <Info size={15} aria-hidden="true" />
-          <p><strong>Local browser workspace.</strong> Records stay on this browser, are shared between accounts using it, and are not synced to your account. Signing out keeps them here.</p>
+          <p><strong>Account finances, local planning.</strong> Actual transactions, expected events, and saved budgets belong to your account. Budget targets and legacy plans stay in this browser and are shared between accounts.</p>
         </aside>
         <PageTransition>
-          <Outlet />
+          <Outlet key={user?.id} />
         </PageTransition>
       </main>
       <Toaster />

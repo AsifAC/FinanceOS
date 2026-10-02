@@ -56,7 +56,6 @@ export function TopNav() {
     timezone,
     setActiveYear,
     setSelectedMonth,
-    state,
   } = useFinanceData();
   const { isAuthenticated, user } = useAuth();
   const { logout, isSigningOut, logoutError } = useLogout();
@@ -82,7 +81,6 @@ export function TopNav() {
             </Link>
             <div className="financeos-topnav-context">
               <span className="financeos-topnav-title">{pageTitle}</span>
-              <span className="financeos-topnav-budget">{activeYear} Budget</span>
             </div>
           </div>
 

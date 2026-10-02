@@ -84,7 +84,7 @@ function mapError(error: {
   };
 }
 
-async function getCurrentUserId(): Promise<
+async function getCurrentUserId(expectedOwnerId?: string): Promise<
   PaymentMethodServiceResult<string>
 > {
   if (!supabase) return failure(notConfiguredError);
@@ -92,6 +92,9 @@ async function getCurrentUserId(): Promise<
   const { data, error } = await supabase.auth.getUser();
   if (error) return failure(mapError(error));
   if (!data.user) return failure(notAuthenticatedError);
+  if (expectedOwnerId && data.user.id !== expectedOwnerId) {
+    return failure({ code: "account_changed", message: "The active account changed before the payment method request." });
+  }
 
   return success(data.user.id);
 }
@@ -159,10 +162,11 @@ export async function fetchPaymentMethods(): Promise<
 
 export async function createPaymentMethod(
   input: CreatePaymentMethodInput,
+  expectedOwnerId?: string,
 ): Promise<PaymentMethodServiceResult<PaymentMethod>> {
   if (!supabase) return failure(notConfiguredError);
 
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId(expectedOwnerId);
   if (!userId.ok) return failure(userId.error);
 
   const { data, error } = await supabase
@@ -182,10 +186,11 @@ export async function createPaymentMethod(
 export async function updatePaymentMethod(
   id: string,
   updates: UpdatePaymentMethodInput,
+  expectedOwnerId?: string,
 ): Promise<PaymentMethodServiceResult<PaymentMethod>> {
   if (!supabase) return failure(notConfiguredError);
 
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId(expectedOwnerId);
   if (!userId.ok) return failure(userId.error);
 
   const { data, error } = await supabase
@@ -203,16 +208,18 @@ export async function updatePaymentMethod(
 
 export function archivePaymentMethod(
   id: string,
+  expectedOwnerId?: string,
 ): Promise<PaymentMethodServiceResult<PaymentMethod>> {
-  return updatePaymentMethod(id, { is_archived: true, is_default: false });
+  return updatePaymentMethod(id, { is_archived: true, is_default: false }, expectedOwnerId);
 }
 
 export async function deletePaymentMethod(
   id: string,
+  expectedOwnerId?: string,
 ): Promise<PaymentMethodServiceResult<void>> {
   if (!supabase) return failure(notConfiguredError);
 
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId(expectedOwnerId);
   if (!userId.ok) return failure(userId.error);
 
   const { error } = await supabase
@@ -228,10 +235,11 @@ export async function deletePaymentMethod(
 
 export async function setDefaultPaymentMethod(
   id: string,
+  expectedOwnerId?: string,
 ): Promise<PaymentMethodServiceResult<PaymentMethod>> {
   if (!supabase) return failure(notConfiguredError);
 
-  const userId = await getCurrentUserId();
+  const userId = await getCurrentUserId(expectedOwnerId);
   if (!userId.ok) return failure(userId.error);
 
   const { data, error } = await supabase

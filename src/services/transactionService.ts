@@ -115,8 +115,14 @@ export function fetchTransactionById(id: string): Promise<TransactionServiceResu
   });
 }
 
-export function createTransaction(input: CreateTransactionInput): Promise<TransactionServiceResult<Transaction>> {
+export function createTransaction(
+  input: CreateTransactionInput,
+  expectedOwnerId?: string,
+): Promise<TransactionServiceResult<Transaction>> {
   return authenticated(async (client, userId) => {
+    if (expectedOwnerId && expectedOwnerId !== userId) {
+      return failure("account_changed", "The active account changed before the transaction could be saved.");
+    }
     if (!input.type || input.amount === undefined || !input.title || !input.transaction_date || !validFields(input)) {
       return failure("invalid_input", "Provide a type, positive amount, title and valid transaction date.");
     }
@@ -129,8 +135,11 @@ export function createTransaction(input: CreateTransactionInput): Promise<Transa
   });
 }
 
-export function updateTransaction(id: string, input: UpdateTransactionInput): Promise<TransactionServiceResult<Transaction>> {
+export function updateTransaction(id: string, input: UpdateTransactionInput, expectedOwnerId?: string): Promise<TransactionServiceResult<Transaction>> {
   return authenticated(async (client, userId) => {
+    if (expectedOwnerId && expectedOwnerId !== userId) {
+      return failure("account_changed", "The active account changed before the transaction could be updated.");
+    }
     const payload: TransactionUpdate = writableFields(input);
     if (!validFields(input) || !Object.values(payload).some((value) => value !== undefined)) {
       return failure("invalid_input", "Provide valid transaction fields to update.");
@@ -142,10 +151,14 @@ export function updateTransaction(id: string, input: UpdateTransactionInput): Pr
   });
 }
 
-export function deleteTransaction(id: string): Promise<TransactionServiceResult<void>> {
+export function deleteTransaction(id: string, expectedOwnerId?: string): Promise<TransactionServiceResult<void>> {
   return authenticated(async (client, userId) => {
+    if (expectedOwnerId && expectedOwnerId !== userId) {
+      return failure("account_changed", "The active account changed before the transaction could be deleted.");
+    }
     const { data, error } = await client.from("transactions").delete()
       .eq("id", id).eq("user_id", userId).select("id").maybeSingle();
+    if (error?.code === "23503") return failure("linked_expected_event", "This actual transaction is linked to a completed expected event and cannot be deleted. Undo completion is not available yet.");
     if (error) return databaseFailure(error.code);
     return data ? success(undefined) : failure("not_found", "Transaction was not found.");
   });

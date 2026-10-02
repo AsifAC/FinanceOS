@@ -1,4 +1,3 @@
-import { FinanceOSLogo } from "../common/FinanceOSLogo";
 import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes } from "react";
 import { Link } from "react-router";
 import { ArrowRight, Check, Eye, EyeOff, Mail } from "lucide-react";
@@ -116,7 +115,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   return (
     <div className="auth-form-enter">
       <div className="auth-form-heading">
-        <FinanceOSLogo decorative />
         <h1 ref={headingRef} tabIndex={-1}>{signup ? "Create your FinanceOS account" : "Log in to FinanceOS"}</h1>
         <p>{signup ? "Make room for your next chapter." : "Welcome back. Your financial workspace is ready."}</p>
       </div>
