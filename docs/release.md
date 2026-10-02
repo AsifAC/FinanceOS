@@ -6,9 +6,25 @@ No temporary/debug or unrelated file was identified for removal.
 ## Production targeting
 
 The existing Vercel project is `finance-os` in `asifacs-projects`, serving
-`https://www.financeos.com`. Its Git integration uses `AsifAC/FinanceOS`, branch
+`https://finance-os-red-sigma.vercel.app`. Its Git integration uses `AsifAC/FinanceOS`, branch
 `main`, with Vite's `npm run build` and `dist` output. `vercel.json` provides the
 SPA rewrite required for direct authenticated URLs and refreshes.
+
+Vercel also lists `financeos.com` and `www.financeos.com`, but release HTTP
+inspection found they serve an external WordPress site rather than this app.
+Vercel reports their external Cloudflare DNS as misconfigured. No DNS or
+WordPress change was made. The existing public Vercel domain is the verified
+release address; custom-domain correction requires a separate ownership/intent
+decision. Generated deployment/branch URLs may require Vercel authentication.
+
+The initial release deployed successfully from commit `33fead0` through the
+existing Git integration, and GitHub CI passed. Read-only production browser
+checks passed public routes at all four responsive widths and all protected
+deep-link redirects. No runtime, console, or HTTP errors were observed on the
+verified Vercel domain. The deployed bundle contains the intended live URL and
+publishable key; no secret credentials were found. Existing-account reads were
+not run because no authenticated session was supplied. Completion was not
+tested by mutating production data.
 
 Production frontend configuration contains only the live Supabase URL and
 publishable key, plus the existing verification-readiness flags. Verification
@@ -121,7 +137,9 @@ linkage with deletion restriction. No migration file was edited or reapplied.
 The database contracts/tests, integrated application/tests, and documentation/
 hosting configuration are grouped into three understandable commits. Actual,
 expected, archive, and auth/UI application files are intertwined and remain one
-cohesive application commit. No Git history is rewritten.
+cohesive application commit. A fourth documentation/smoke-target correction
+records the custom-domain discrepancy discovered after deployment. No Git
+history is rewritten.
 
 Recurrence, undo completion, planning imports, and account-backed monthly
 targets remain deferred. Provider verification readiness and leaked-password

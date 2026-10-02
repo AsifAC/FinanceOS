@@ -23,8 +23,10 @@ FinanceOS is a modern budgeting dashboard UI for tracking income, expenses, savi
 
 The release architecture and deployment procedure are recorded in
 [docs/release.md](docs/release.md). Production hosting uses the existing Vercel
-`finance-os` project and `www.financeos.com`, with GitHub `main` as the production
-branch. Only the live Supabase URL and publishable key belong in frontend
+`finance-os` project at `https://finance-os-red-sigma.vercel.app`, with GitHub
+`main` as the production branch. The configured `www.financeos.com` alias has
+misconfigured external DNS and currently serves a separate WordPress site;
+no DNS change was made during release. Only the live Supabase URL and publishable key belong in frontend
 configuration; `.env.local` and `.vercel` runtime files stay ignored.
 
 Account verification onboarding is implemented; the approved database migration was applied live on 2026-09-26. Email and SMS delivery are currently disabled (`VITE_EMAIL_OTP_READY=false`, `VITE_PHONE_OTP_READY=false`). Account verification enforcement is temporarily disabled for development/manual testing through `VITE_ACCOUNT_VERIFICATION_REQUIRED=false` (also the default when unset). Authenticated users reach the application regardless of `profiles.account_verified_at`; bypassing never changes that timestamp or marks anyone verified. With the flag set to `true`, unverified users are routed to `/auth/verify` and verified users may access app pages. Logout remains available during onboarding and returns to landing through AuthProvider. No Auth configuration changes have been made.

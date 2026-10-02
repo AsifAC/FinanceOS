@@ -6,7 +6,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const origin = 'https://www.financeos.com';
+const origin = 'https://finance-os-red-sigma.vercel.app';
 const interactive = process.argv.includes('--interactive');
 const dir = await mkdtemp(join(tmpdir(), 'financeos-production-smoke-'));
 const profile = join(dir, 'profile');
