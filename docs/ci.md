@@ -12,6 +12,18 @@ suite once:
   identity checks, and profile-write restrictions.
 - `transactionService.test.mjs`: validation, ownership filters, date ranges,
   pagination, and safe errors.
+- `transactionDates.test.mjs`: calendar-date validation, leap years, timezone
+  independence, and year/month filtering.
+- `actualTransactionDrafts.test.mjs`: actual-only create-field mapping, nullable
+  category/payment UUIDs, positive two-decimal amount validation, and date checks.
+- `categoryLabels.test.mjs`: category label resolution, null/unknown references,
+  archived historical labels, and neutral loading text.
+- `paymentMethodLabels.test.mjs`: backend nickname resolution, null/unknown
+  references, neutral loading/error labels, archived methods, and default metadata.
+- `selectableCategories.test.mjs`: per-type category selection and archived-row
+  exclusion while retaining backend UUIDs.
+- `metadataOwnership.test.mjs`: captured-account checks before category and
+  payment-method writes, including default RPC calls and owner-spoof prevention.
 
 Additional offline `tests/*.test.mjs` suites are picked up automatically. Keep
 that naming convention for tests that run without live credentials or services.
@@ -24,6 +36,19 @@ it is not a deployment. The workflow does not print environment values or upload
 build artifacts.
 
 ## Tests outside CI
+
+- `tests/transactionsBrowser.mjs` checks the isolated actual-transactions ledger
+  with mocked auth, transaction, category, and payment-method responses,
+  including account switching, stale responses, fetch failures, and unchanged
+  legacy storage. It also covers account-backed category CRUD, archive/restore,
+  owner mutation races, payment-method create/edit/archive/default flows and
+  account switching. Selectable filtering is covered by
+  `tests/selectablePaymentMethods.test.mjs`. Run against
+  `npm run dev` with
+  `node tests/transactionsBrowser.mjs`. Set `CHROME_PATH` for your local Chrome
+  installation and `TRANSACTIONS_REVIEW_URL` for a non-default dev server URL.
+  It uses an isolated profile and blocks remote requests; no credentials or
+  live account are needed. This remains a local browser check, not hosted CI.
 
 - `tests/authBrowser.mjs` is a manual headless Chrome harness. It defaults to a
   Windows Chrome executable, expects a running Vite dev server, and uses a fixed
@@ -55,3 +80,16 @@ git diff --check
 
 For a credential-free build check, use a disposable checkout without `.env`
 files. Do not remove or print your working checkout's local environment file.
+
+Atomic expected-event completion has local database checks. After starting
+local Supabase, run `supabase db reset --local` and `supabase test db --local`.
+Run `node tests/expectedCompletionConcurrency.mjs` for two overlapping
+authenticated requests in `supabase_db_FinanceOS`. It has no remote URL option,
+creates disposable local fixtures and removes them afterward. It is opt-in,
+outside standard unit-only CI, and requires Docker/local Supabase.
+
+The release validation on 2026-10-02 passed 87 Node tests and 169 local pgTAP
+assertions, plus both browser harnesses and the completion concurrency test.
+Responsive checks cover 375, 768, 1024, and 1440 pixels. Never direct database
+tests at the linked production project. See [release.md](release.md) for the
+hosting configuration, source-of-truth boundaries, and release follow-ups.

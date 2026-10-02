@@ -3,7 +3,7 @@
 ## Project
 
 - Supabase URL: https://zmbyqstmgtdbyvczuvki.supabase.co
-- Backend rebuild status: Step 7 transactions migration deployed; verified in live migration history on 2026-09-20
+- Backend status: account financial tables and atomic expected-event completion are deployed; release catalog verification completed on 2026-10-02
 - Clean checkpoint: `e435950 chore: reset Supabase backend foundation`
 
 ## Current Status
@@ -18,19 +18,22 @@ Frontend Auth remains the same email/password account. `/auth/verify` requires a
 
 SMS provider and email OTP-template configuration are **unknown**, because the available MCP tools cannot inspect Auth configuration. Delivery defaults disabled; no real codes/accounts were created. Required setup: Authentication → Email Templates → Magic Link must include `{{ .Token }}` and use six-digit OTPs with working email delivery; Authentication → Phone must have a securely configured SMS provider and phone confirmation enabled. Enable the corresponding VITE_EMAIL_OTP_READY / VITE_PHONE_OTP_READY deployment flag only after review. See README for manual checks. Do not deploy the enforced gate without an approved migration and at least one working delivery channel.
 
-Migration approval and application are complete. Local database security checks passed again after filename alignment. The security advisor reported only leaked-password protection disabled; this Auth setting was not changed. Email/SMS delivery remains unconfigured or unverified and disabled in the frontend. Developer Preview remains removed; financial pages remain explicitly browser-local, not Supabase account data. Step 8 / expected_transactions remains paused.
+Migration approval and application are complete. Local database security checks passed again after filename alignment. The security advisor reported only leaked-password protection disabled; this Auth setting was not changed. Email/SMS delivery remains unconfigured or unverified and disabled in the frontend. Developer Preview remains removed. Current actual financial activity is account-backed: transaction CRUD, Dashboard, Reports, Annual Planner, Income, Expenses, and Savings use authenticated Supabase transactions. The repository frontend now enables expected-event CRUD against the deployed `expected_transactions` table for planned/cancelled rows; the release frontend includes that hosted behavior. The atomic completion RPC was deployed and verified in Step 8G; hosted completion is enabled in the release frontend. Monthly targets, fixed and pending obligations, payment plans, savings goals, planning metadata, and legacy browser data remain local. Recurrence and local planning import remain deferred.
 
-- Public tables: profiles, user_preferences, categories, payment_methods, and transactions exist live; RLS is enabled on all five (read-only MCP verification, 2026-09-20)
-- Public RLS policies: profiles, user_preferences, categories, and payment_methods ownership policies exist live
+- Public tables: profiles, user_preferences, categories, payment_methods, transactions, budget_snapshots, and expected_transactions exist live with RLS
+- Public RLS policies: owner-scoped policies are verified for profiles, user_preferences, categories, payment_methods, transactions, budget_snapshots, and expected_transactions
 - Storage buckets: not created yet
 - Edge functions: not created yet
 - Public database functions/triggers: profile/preferences timestamp, new-user bootstrap, default category bootstrap, payment_methods timestamp trigger, and atomic payment method default RPC exist live
-- Application pages require Supabase authentication and use the existing explicitly labeled browser-local financial data workflow; Developer Preview is removed
-- Supabase Auth service/provider exists locally and is not used for finance data yet
-- Categories schema/service/hooks exist locally and are not connected to UI pages yet
-- Payment methods schema/service/hooks exist locally and are not connected to UI pages yet
-- Step 7 actual transactions migration is deployed; types/service/hook are implemented locally, and frontend transaction integration has not started
-- All five local migration versions and names match live migration history; full financial schema equivalence is not yet verified, and live authenticated runtime/RLS testing remains pending
+- Application pages require Supabase authentication; account actual views use authenticated transactions while planning state stays in the explicitly labeled browser-local workspace
+- Supabase Auth service/provider scopes financial data access
+- Categories and payment methods management/labeling use account-backed services and hooks
+- Actual transaction CRUD and account-backed snapshot/archive persistence are implemented
+- Step 8B schema/RLS and Step 8D1 completion-field hardening migrations are deployed and production metadata-verified
+- Step 8C/8D2 provide the authenticated expected-event ledger and create/edit/cancel/reopen/delete for planned or cancelled rows only
+- Step 8E applied only `20261001032754_expected_transactions` and `20261001040248_harden_expected_transaction_completion_fields`; no production test rows were created
+- Step 8F atomic completion RPC was deployed and production metadata/security verified in Step 8G on 2026-10-02; hosted completion is enabled in the release frontend
+- Recurrence generation and local planning import remain unimplemented
 
 ## Integration Order
 
@@ -52,18 +55,18 @@ Migration approval and application are complete. Local database security checks 
 
 ## Planned Tables
 
-Tables are planned or staged but not connected to frontend finance workflows yet:
+Current table status (later dated sections retain historical checkpoints):
 
 - profiles: live
 - user_preferences: live
 - categories: live
 - payment_methods: live
-- transactions: live; migration deployment verified, full schema equivalence and authenticated runtime/RLS testing pending
-- expected_transactions
+- transactions: live; account-backed actual CRUD and shared actual calculations connected
+- expected_transactions: live; owner/type-safe references, RLS, and protected completion fields verified
 - savings_goals
 - debts
-- budget_snapshots
-- archived_budgets
+- budget_snapshots: live; owner-isolated stored archives
+- archived_budgets: no separate table needed; stored budget_snapshots serve this role
 - notifications
 
 ## Planned Storage Buckets
@@ -94,7 +97,228 @@ Storage buckets are planned but not created yet:
 - Authentication protects application access; it does not migrate, upload, merge, or synchronize local financial records with Supabase.
 - Real Supabase reads/writes should be introduced one workflow at a time after its schema, RLS policies, tests, and rollback path are documented.
 
-The step notes below record earlier implementation checkpoints. Their table inventories and next-step recommendations are historical; Current Status and the Step 7 deployment verification describe the latest verified state.
+## Step 8B — Expected Transaction Schema (Initially Local; Now Deployed)
+
+An expected transaction is one owner-specific planned financial event with a
+calendar date, positive planned amount, financial type, optional owned category
+and payment method UUIDs, notes, and a lifecycle status. It is not an actual
+transaction, a monthly budget target, a recurrence definition, a savings goal,
+a debt balance, or a payment-plan definition. Monthly expected amounts and
+Payment Plans remain separate local models; no local planning data is migrated.
+
+The new `public.expected_transactions` migration is
+`20261001032754_expected_transactions.sql`. It uses the statuses `planned`,
+`completed`, and `cancelled`; the completion fields must be consistent, and
+`overdue` is derived from a planned row's expected date rather than stored.
+Category references enforce both owner and category type. Payment-method and
+actual-transaction references enforce the same owner. Category/payment links
+and linked actual transactions use `ON DELETE RESTRICT` to retain history.
+
+Authenticated CRUD policies are owner-scoped. Step 8B grants table CRUD, so a
+direct authenticated database client can currently write a structurally valid
+`completed` row. No application client or workflow is added in this phase.
+Before expected-row mutations are exposed in Step 8D/8F, completion/link fields
+must be protected from direct client updates and completion must use a single
+atomic server operation that inserts and links the actual transaction. This
+migration deliberately does not add that operation.
+
+The original Step 8B verification was local-only. The schema was later applied
+to the live project during Step 8E after a 115-test local pgTAP preflight.
+Continue running database tests with explicit `--local` targeting. Production
+migrations must be reviewed and applied intentionally; this checkout remains
+linked to the live FinanceOS project.
+
+## Step 8C — Read-Only Expected Events Ledger
+
+`/expected-transactions` reads only account-owned expected rows through the
+expected transaction service and owner-safe hook. It uses the shared account
+category and payment-method reads for UUID labels, derives overdue from
+`planned` plus a past local calendar date, and clears prior-owner rows on
+account switch. The route does not mount the legacy finance provider or read
+`financeos:app-data:v1`. It has year, month, type, status, and title filters;
+planned events sort first by nearest expected date, followed by historical
+completed/cancelled rows. Create/edit/cancel/reopen/delete controls are
+available for planned/cancelled rows; completed rows are read-only.
+
+Monthly targets remain local and are not shown as event rows. Recurrence and
+fixed local plans remain separate. Before production schema deployment, this
+route failed closed on non-local endpoints. The repository client now uses
+the configured authenticated Supabase client; a project missing the table
+returns a safe error and never falls back to local planning data. Hosted users
+receive this behavior after the frontend is deployed.
+
+## Step 8D1 — Completion-Field Privilege Hardening (Production Verified)
+
+Migration `20261001040248_harden_expected_transaction_completion_fields.sql`
+removes authenticated table-wide INSERT/UPDATE grants. Authenticated clients
+may insert only event fields; `user_id` defaults to `auth.uid()`, while row ID
+and status use database defaults. New client-created rows therefore start as
+`planned`. Clients may update event fields and status (to cancel or reopen),
+but cannot choose owner/ID on insert or mutate `actual_transaction_id` or
+`completed_at`. A direct `status = 'completed'` update fails the existing
+completion consistency constraint because the link and timestamp cannot be
+written by that role.
+
+RLS additionally filters completed rows from ordinary UPDATE and DELETE.
+Planned and cancelled rows remain editable/deletable by their owner; cancelled
+rows can return to planned. SELECT remains owner-scoped. Step 8D2's mutation
+service submits only title, amount,
+type, expected_date, optional category/payment UUIDs, and notes for creation,
+omitting user_id, id, status, actual_transaction_id, and completed_at.
+Updates allowlist only editable event fields. Separate lifecycle methods
+perform planned-to-cancelled and cancelled-to-planned transitions; arbitrary
+status changes are not exposed. Planned/cancelled delete requires confirmation.
+Completed rows remain read-only. Mutation results are discarded after an
+account-generation change.
+
+The later atomic completion operation must remain separate from browser table
+grants. It will likely use a narrowly scoped SECURITY DEFINER RPC that checks
+`auth.uid()` against the expected-row owner, uses a fixed safe search_path,
+and has execution revoked from PUBLIC/anon. That RPC belongs to Step 8F and is
+not implemented here. The two expected-event migrations were applied to
+production and their schema, constraints, RLS, effective privileges, and
+defaults were verified by read-only metadata inspection on 2026-10-01. No
+production test accounts or expected-event rows were created. pgTAP remains a
+local-only test; use explicit `--local` targeting.
+
+## Step 8E — Production Deployment Verification
+
+On 2026-10-01, `supabase db push --linked` applied only:
+
+- `20261001032754_expected_transactions.sql`
+- `20261001040248_harden_expected_transaction_completion_fields.sql`
+
+Before application, the linked project reference was confirmed as
+`zmbyqstmgtdbyvczuvki`, remote history matched the expected six prior
+migrations, and `supabase db push --dry-run --linked` listed only these two
+files. Afterwards, CLI migration history recorded both versions. Read-only
+production metadata confirmed the UUID/auth owner schema, positive
+`numeric(14,2)` amount, date/type/status and completion constraints,
+owner/type-safe category FK, owner-safe payment/actual FKs, unique actual link,
+expected indexes, timestamp trigger, enabled RLS, and owner-scoped
+SELECT/INSERT/UPDATE/DELETE policies.
+
+Effective grants show authenticated has table SELECT/DELETE but no table-wide
+INSERT/UPDATE. Column INSERT is limited to title, amount, type, expected_date,
+category_id, payment_method_id, and notes. Column UPDATE additionally permits
+status. Authenticated cannot insert or update id, user_id, actual_transaction_id,
+or completed_at. `anon` and `PUBLIC` have no table or column access. Database
+defaults provide `gen_random_uuid()`, `auth.uid()`, `planned`, and server
+timestamps. Verification did not create users or financial rows and did not
+modify unrelated schema or data.
+
+## Step 8F — Atomic completion (implemented locally; deployed in Step 8G)
+
+Migration `20261002184257_complete_expected_transaction.sql` adds
+`public.complete_expected_transaction(p_expected_transaction_id uuid,
+p_title text, p_amount numeric, p_transaction_date date, p_category_id uuid,
+p_payment_method_id uuid, p_notes text) -> jsonb`.
+All override arguments are explicit; null reference/notes values clear those
+actual fields. Type always comes from the expected event. The result contains
+`expected_transaction`, `actual_transaction`, and `already_completed`.
+
+The public SECURITY INVOKER wrapper calls a private SECURITY DEFINER function
+with an empty search_path and fully qualified relations. Definer rights are
+required to set protected completion columns; no browser column/table grants
+are restored. Both functions revoke PUBLIC/anon execution and grant only
+authenticated execution. The implementation rejects null auth.uid(), selects
+only the caller's expected UUID FOR UPDATE, and rechecks its state after locking.
+Cancelled events must be reopened. Completed retries return the original actual
+row without inserting or applying changed overrides. A missing or cross-owner
+UUID has the same safe unavailable response.
+
+For planned events it validates a trimmed nonblank title, finite positive amount
+up to 999999999999.99 with at most two decimals, and a finite calendar date in
+years 1–9999. Category must be owned, active, and match type; payment method must
+be owned and active. Metadata rows are locked FOR SHARE to prevent concurrent
+archive/type changes during insertion. Archived expected references remain
+visible as historical defaults but require replacement or clearing for the new
+actual. Source is `manual`, since this records an explicitly confirmed event,
+not recurrence generation. The expected title/amount/date/notes remain the
+original planned record; only lifecycle/link/timestamps change.
+
+Insert, link, completion state, and timestamp are one transaction. Any failure,
+including an expected update failure after actual insert, rolls everything
+back. Concurrent requests serialize on the expected row; retries after unknown
+network commit state are safe. The service calls only this RPC, and the hook
+discards results after an account-generation change. The shared editor uses
+actual-entry validation and defaults actual date to expected_date, preserving
+the user's planned calendar day. Repeated submission is blocked. Successful
+completion updates the expected row and links to the canonical actual ledger,
+which fetches authoritative server rows when opened; no second ledger cache
+or local financial copy is maintained.
+
+The existing actual-link RESTRICT FK prevents deleting the actual. The actual
+service explains the restriction safely and retains the row on failure.
+Completed expected rows remain ordinarily uneditable/undeletable. Undo
+completion, recurrence, monthly target migration, and local planning import
+are deferred. Snapshots and legacy local storage are unchanged.
+
+This migration was deployed and inspected in Step 8G on 2026-10-02. Hosted
+completion is enabled in repository code through the normal authenticated
+client. The frontend still needs releasing before hosted users receive the
+guard change. A configured project without the RPC reports a safe failure;
+there is no sequential browser insert/update or local fallback.
+Do not run a linked production push as part of local validation.
+
+Local checks: `supabase db reset --local`, `supabase test db --local`, and
+`node tests/expectedCompletionConcurrency.mjs`. The last command runs two
+overlapping authenticated SQL sessions only in `supabase_db_FinanceOS`, asserts
+one actual UUID, and removes its local fixtures. pgTAP covers permissions,
+owner/type/active-reference checks, rollback, idempotency, and linked deletion.
+The mocked browser harness covers completion overrides, retry, ledger refresh,
+account switching, legacy storage isolation, and widths 375/768/1024/1440.
+
+## Step 8G — Completion RPC production deployment
+
+On 2026-10-02, local preflight passed all 169 pgTAP checks and the documented
+overlapping completion integration test. The linked project file and MCP API
+URL both identified `zmbyqstmgtdbyvczuvki`. Remote history matched the expected
+eight migrations, and `supabase db push --dry-run --linked` listed only
+`20261002184257_complete_expected_transaction.sql`.
+`supabase db push --linked --yes` applied that migration alone; CLI history
+then recorded version `20261002184257` remotely.
+
+Read-only production PostgreSQL inspection found both seven-argument functions
+returning JSONB. The public SQL wrapper is SECURITY INVOKER; the private PL/pgSQL
+implementation is SECURITY DEFINER. Both use an empty search_path, and both
+stored bodies exactly match the reviewed migration. Effective function
+privileges confirm authenticated EXECUTE and no anon/PUBLIC EXECUTE. Standard
+administrative roles retain their existing/default access; the public wrapper
+has postgres/service_role administrative ACL entries and the private function
+has postgres plus authenticated entries. Authenticated private execution is
+needed by the invoker wrapper; this does not expose the private schema through
+the Data API. A read-only GET with `Accept-Profile: private` returned HTTP 406 /
+PGRST106, confirming exclusion. No RPC was invoked against production.
+
+Before/after metadata comparisons found no changes to the existing actual,
+expected, category, payment-method, or snapshot table grants, RLS policies, or
+constraints. Expected completion columns remain unavailable to direct client
+INSERT/UPDATE; completed rows remain ordinarily uneditable/undeletable.
+The actual table retains owner RLS and its prior authenticated CRUD grants,
+without TRUNCATE/REFERENCES/TRIGGER privileges. Unique actual linkage and
+same-owner ON DELETE RESTRICT remain intact. The safe linked-actual deletion
+message is unchanged. Production verification created no users or financial
+data, and there were no unrelated schema/data mutations.
+
+After verification, the local-endpoint completion gate was replaced with
+configured-client availability. Completion still calls only the atomic RPC.
+The mocked browser harness now simulates a non-local client while blocking
+remote requests. Unit coverage includes hosted completion and safe missing-RPC
+failure. Deploy the frontend separately; no frontend deployment, commit, or
+push is part of this database checkpoint. Undo completion, recurrence, legacy
+planning import, and monthly target migration remain deferred.
+
+Step 8G regression results: typecheck, production build, `git diff --check`,
+83 Node tests, the mocked hosted-client browser harness, 169/169 local pgTAP
+checks, and the local overlapping-request integration test all passed. Browser
+coverage includes widths 375/768/1024/1440, idempotent retry, account switching,
+linked-actual deletion feedback, and legacy storage preservation. The security
+advisor reported only the pre-existing leaked-password protection warning;
+this unrelated Auth setting was not changed. The build retains its bundle-size
+warning. All repository work remains unstaged and uncommitted.
+
+The step notes below record earlier implementation checkpoints. Their table inventories and next-step recommendations are historical; Current Status and the latest Step 8 deployment verification describe the latest verified state.
 
 ## Step 3 Auth Foundation
 
